@@ -7,40 +7,55 @@ defmodule Camarero do
     plug(:match)
 
     Module.register_attribute(__MODULE__, :routes, accumulate: true, persist: true)
+    @root "/" <> (:camarero |> Application.get_env(:root, "") |> String.trim("/"))
 
     Enum.each(
-      Application.get_env(:camarero, :carta, %{}),
+      :camarero
+      |> Application.get_env(:carta, [])
+      |> Enum.sort_by(&(&1 |> apply(:route, []) |> String.length()), &>=/2),
       fn module ->
-        route = apply(module, :route, [])
+        route = Enum.join([@root, module |> apply(:route, []) |> String.trim("/")], "/")
         @routes {route, module}
 
         get(route) do
+          values = apply(unquote(module), :all, [])
+
           send_resp(
             conn,
             200,
-            Jason.encode!(apply(unquote(module), :get, [""]))
+            Jason.encode!(%{key: "★", value: values})
           )
         end
 
-        get("/#{route}/:param") do
-          send_resp(
-            conn,
-            200,
-            Jason.encode!(apply(unquote(module), :get, [param]))
-          )
+        get("#{route}/:param") do
+          {status, response} =
+            case apply(unquote(module), :get, [param]) do
+              {:ok, value} -> {200, %{key: param, value: value}}
+              :error -> {404, %{key: param, error: :not_found}}
+              {:error, {status, cause}} -> {status, cause}
+            end
+
+          send_resp(conn, status, Jason.encode!(response))
         end
       end
     )
 
     def routes, do: @routes
 
-    get("/*path") do
-      [param | path] = Enum.reverse(path)
+    get("#{@root}/*full_path") do
+      [param | path] = Enum.reverse(full_path)
       path = path |> Enum.reverse() |> Enum.join("/")
 
       with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
            {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
-        send_resp(conn, 404, "Not found")
+        send_resp(
+          conn,
+          400,
+          Jason.encode!(%{
+            error: "Handler was not found",
+            path: Enum.join([@root | full_path], "/")
+          })
+        )
       else
         {module, param} ->
           send_resp(conn, 200, Jason.encode!(apply(module, :get, [param])))
@@ -50,7 +65,11 @@ defmodule Camarero do
     # . . .
 
     match(_) do
-      send_resp(conn, 404, "Not found")
+      send_resp(
+        conn,
+        400,
+        Jason.encode!(%{error: "API root was not met", path: conn.request_path})
+      )
     end
 
     plug(:dispatch)
