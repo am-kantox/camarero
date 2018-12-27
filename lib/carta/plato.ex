@@ -4,14 +4,15 @@ defmodule Camarero.Plato do
   @callback route() :: binary()
 
   defmacro __using__(opts \\ []) do
-    {bag, opts} = Keyword.pop(opts, :initial, [])
-    {trim, opts} = Keyword.pop(opts, :trim, "/")
-
     quote do
       use GenServer
       @behaviour Camarero.Plato
       @initial unquote(
-                 Macro.escape(Enum.into(bag, %{"index" => %{error: "Listing is not allowed"}}))
+                 Macro.escape(
+                   Enum.into(opts, %{"" => %{module: __CALLER__.module}}, fn {k, v} ->
+                     {to_string(k), v}
+                   end)
+                 )
                )
 
       def get(key) when is_binary(key),
@@ -20,8 +21,13 @@ defmodule Camarero.Plato do
       def put(key, %{} = value) when is_binary(key),
         do: GenServer.cast(__MODULE__, {:put, {key, value}})
 
-      def route(),
-        do: __MODULE__ |> Macro.underscore() |> String.trim_leading(unquote(trim))
+      def route() do
+        __MODULE__
+        |> Macro.underscore()
+        |> String.split("/")
+        |> Enum.reverse()
+        |> hd()
+      end
 
       def start_link(initial \\ [], opts \\ unquote(opts))
 

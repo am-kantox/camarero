@@ -6,19 +6,44 @@ defmodule Camarero do
     use Plug.Router
     plug(:match)
 
-    get("/*path") do
-      [path, query] =
-        case path |> Enum.join("/") |> String.split("#", parts: 2) do
-          [path] -> [path, "index"]
-          [path, query] -> [path, query]
+    Module.register_attribute(__MODULE__, :routes, accumulate: true, persist: true)
+
+    Enum.each(
+      Application.get_env(:camarero, :carta, %{}),
+      fn module ->
+        route = apply(module, :route, [])
+        @routes {route, module}
+
+        get(route) do
+          send_resp(
+            conn,
+            200,
+            Jason.encode!(apply(unquote(module), :get, [""]))
+          )
         end
 
-      case Camarero.Catering.Routes.get(String.trim(path, "/")) do
-        module when is_atom(module) ->
-          send_resp(conn, 200, Jason.encode!(apply(module, :get, [query])))
+        get("/#{route}/:param") do
+          send_resp(
+            conn,
+            200,
+            Jason.encode!(apply(unquote(module), :get, [param]))
+          )
+        end
+      end
+    )
 
-        nil ->
-          send_resp(conn, 404, "Not found")
+    def routes, do: @routes
+
+    get("/*path") do
+      [param | path] = Enum.reverse(path)
+      path = path |> Enum.reverse() |> Enum.join("/")
+
+      with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
+           {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
+        send_resp(conn, 404, "Not found")
+      else
+        {module, param} ->
+          send_resp(conn, 200, Jason.encode!(apply(module, :get, [param])))
       end
     end
 
