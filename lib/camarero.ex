@@ -6,8 +6,20 @@ defmodule Camarero do
     use Plug.Router
     plug(:match)
 
-    get("/login/:id") do
-      send_resp(conn, 200, "You said #{inspect(conn.params)}")
+    get("/*path") do
+      [path, query] =
+        case path |> Enum.join("/") |> String.split("#", parts: 2) do
+          [path] -> [path, "index"]
+          [path, query] -> [path, query]
+        end
+
+      case Camarero.Catering.Routes.get(String.trim(path, "/")) do
+        module when is_atom(module) ->
+          send_resp(conn, 200, Jason.encode!(apply(module, :get, [query])))
+
+        nil ->
+          send_resp(conn, 404, "Not found")
+      end
     end
 
     # . . .
