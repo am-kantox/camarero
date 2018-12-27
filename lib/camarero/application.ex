@@ -6,10 +6,11 @@ defmodule Camarero.Application do
   use Application
 
   def start(_type, _args) do
+    Application.ensure_all_started(:cowboy)
+
     # List all child processes to be supervised
     children = [
-      # Starts a worker by calling: Camarero.Worker.start_link(arg)
-      {Camarero.Cowboy, []}
+      Plug.Cowboy.child_spec(scheme: :http, plug: Camarero.Endpoint, options: [port: 4001])
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

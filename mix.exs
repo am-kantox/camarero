@@ -24,6 +24,7 @@ defmodule Camarero.MixProject do
     [
       {:plug, "~> 1.7"},
       {:cowboy, "~> 2.0"},
+      {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"}
     ]
   end
