@@ -1,10 +1,8 @@
 defmodule Camarero.Catering do
   defmodule Routes do
     @moduledoc false
-    @behaviour Access
 
     @type t() :: map()
-    defstruct routes: []
 
     use Agent
 
@@ -18,22 +16,6 @@ defmodule Camarero.Catering do
 
     def put(key, value) when is_binary(key) and is_atom(value),
       do: Agent.update(__MODULE__, &Map.put(&1, key!(key), value))
-
-    @impl true
-    def fetch(%__MODULE__{}, key) do
-      __MODULE__
-      |> Agent.get(& &1)
-      |> Map.fetch(key!(key))
-    end
-
-    @impl true
-    def get_and_update(%__MODULE__{}, key, function),
-      do: Agent.get_and_update(__MODULE__, &Map.get_and_update(&1, key!(key), function))
-
-    @impl true
-    def pop(%__MODULE__{}, key) do
-      {get(key!(key)), Agent.update(__MODULE__, &Map.delete(&1, key!(key)))}
-    end
 
     defp key!(key), do: String.trim(key, "/")
   end
