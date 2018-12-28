@@ -1,20 +1,28 @@
 defmodule Camarero.MixProject do
   use Mix.Project
 
+  @app :camarero
+  @app_name "camarero"
+  @version "0.2.0"
+
   def project do
     [
-      app: :camarero,
-      version: "0.1.0",
-      elixir: "~> 1.7",
+      app: @app,
+      version: @version,
+      elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      package: package(),
+      xref: [exclude: []],
+      description: description(),
+      deps: deps(),
+      docs: docs()
     ]
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :cowboy, :ranch],
+      extra_applications: [:logger, :cowboy, :ranch, :ssl],
       mod: {Camarero.Application, []}
     ]
   end
@@ -26,6 +34,53 @@ defmodule Camarero.MixProject do
       {:cowboy, "~> 2.0"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"}
+    ]
+  end
+
+  defp description do
+    """
+    The application-wide registry with handy helpers to ease dispatching.
+    """
+  end
+
+  defp package do
+    [
+      name: @app,
+      files: ~w|config lib mix.exs README.md|,
+      maintainers: ["Aleksei Matiushkin"],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/am-kantox/#{@app}",
+        "Docs" => "https://hexdocs.pm/#{@app}"
+      }
+    ]
+  end
+
+  defp docs() do
+    [
+      main: @app_name,
+      source_ref: "v#{@version}",
+      canonical: "http://hexdocs.pm/#{@app}",
+      logo: "stuff/logo-48.png",
+      source_url: "https://github.com/am-kantox/#{@app}",
+      # extras: [
+      #   "stuff/#{@app_name}.md",
+      #   "stuff/backends.md"
+      # ],
+      groups_for_modules: [
+        # Envio
+
+        Behaviours: [
+          Camarero.Tapas,
+          Camarero.Plato
+        ],
+        "Internal Data": [
+          Camarero.Catering.Routes
+        ],
+        "Default Implementations": [
+          Camarero.Carta.Heartbeat
+        ]
+      ]
     ]
   end
 end
