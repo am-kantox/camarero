@@ -39,7 +39,7 @@ defmodule Camarero.Catering do
   @spec route!(Supervisor.child_spec() | {module(), term()} | module()) :: State.t()
   def route!(child_spec) when is_atom(child_spec) do
     with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec),
-         do: Camarero.Catering.Routes.put(apply(child_spec, :route, []), child_spec)
+         do: Camarero.Catering.Routes.put(apply(child_spec, :plato_route, []), child_spec)
   end
 
   def route!({prefix, suffix}) when is_atom(prefix) and is_atom(suffix),
@@ -47,12 +47,12 @@ defmodule Camarero.Catering do
 
   def route!({module, params} = child_spec) when is_atom(module) and is_list(params) do
     with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec),
-         do: Camarero.Catering.Routes.put(apply(module, :route, []), module)
+         do: Camarero.Catering.Routes.put(apply(module, :plato_route, []), module)
   end
 
   def route!(%{start: {module, _, _}} = child_spec) do
     with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec),
-         do: Camarero.Catering.Routes.put(apply(module, :route, []), module)
+         do: Camarero.Catering.Routes.put(apply(module, :plato_route, []), module)
   end
 
   @impl true

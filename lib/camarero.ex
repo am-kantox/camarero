@@ -11,7 +11,7 @@ defmodule Camarero do
 
     defp response!(conn, module, param) do
       {status, response} =
-        case apply(module, :get, [param]) do
+        case apply(module, :plato_get, [param]) do
           {:ok, value} -> {200, %{key: param, value: value}}
           :error -> {404, %{key: param, error: :not_found}}
           {:error, {status, cause}} -> {status, cause}
@@ -23,9 +23,9 @@ defmodule Camarero do
     Enum.each(
       :camarero
       |> Application.get_env(:carta, [])
-      |> Enum.sort_by(&(&1 |> apply(:route, []) |> String.length()), &>=/2),
+      |> Enum.sort_by(&(&1 |> apply(:plato_route, []) |> String.length()), &>=/2),
       fn module ->
-        route = Enum.join([@root, module |> apply(:route, []) |> String.trim("/")], "/")
+        route = Enum.join([@root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
         @routes {route, module}
 
         get(route) do

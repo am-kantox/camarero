@@ -31,7 +31,7 @@ defmodule CamareroTest do
   end
 
   test "responds with 200 on existing key" do
-    Camarero.Carta.Heartbeat.put("existing", 42)
+    Camarero.Carta.Heartbeat.plato_put("existing", 42)
 
     conn = conn(:get, "/api/v1/heartbeat/existing")
 
@@ -47,7 +47,7 @@ defmodule CamareroTest do
 
   test "allows dynamic routes" do
     Camarero.Catering.route!(Camarero.Carta.DynamicHeartbeat)
-    Camarero.Carta.DynamicHeartbeat.put("existing", 42)
+    Camarero.Carta.DynamicHeartbeat.plato_put("existing", 42)
 
     conn = conn(:get, "/api/v1/dynamic_heartbeat/existing")
 
