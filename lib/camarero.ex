@@ -3,6 +3,8 @@ defmodule Camarero do
 
   # idea by Dave Thomas https://twitter.com/pragdave/status/1077775018942185472
   defmodule Handler do
+    @moduledoc false
+
     use Plug.Router
     plug(:match)
 
@@ -79,6 +81,8 @@ defmodule Camarero do
   end
 
   defmodule Endpoint do
+    @moduledoc false
+
     use Plug.Builder
     plug(Plug.Logger)
 

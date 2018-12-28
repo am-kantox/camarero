@@ -1,11 +1,27 @@
 defmodule Camarero.Plato do
+  @moduledoc """
+  This behaviour is high-level abstraction of the container begind handlers.
+
+  Aññ handlers are supposed to implement this behaviour. The simplest way
+  is to `use Camarero.Plato` in the handler module; that will inject
+  the default boilerlate using `%{binary() => any()}` map as a container behind.
+
+  Default implementation uses `Camarero.Tapas` as low-level container implementation.
+  """
+
+  @doc "Returns the container itself, as is"
   @callback plato_all() :: Camarero.Tapas.t()
+  @doc "Returns the value for the key specified"
   @callback plato_get(key :: binary() | atom()) ::
               {:ok, any()} | :error | {:error, {400 | 404 | non_neg_integer(), map()}}
+  @doc "Sets the value for the key specified (intended to be used from the application)"
   @callback plato_put(key :: binary() | atom(), value :: any()) :: :ok
+  @doc "Deletes the key-value pair for the key specified"
   @callback plato_delete(key :: binary() | atom()) :: :ok
+  @doc "Returns the route this module is supposed to be mounted to"
   @callback plato_route() :: binary()
 
+  @doc false
   defmacro __using__(opts \\ []) do
     into =
       Keyword.get(
@@ -58,6 +74,11 @@ defmodule Camarero.Plato do
         |> hd()
       end
 
+      @doc ~s"""
+      Starts the `#{__MODULE__}` linked to the current process.
+      """
+      @spec start_link(initial :: Keyword.t(), opts :: Keyword.t()) ::
+              {:ok, pid()} | {:error, {:already_started, pid()} | term()}
       def start_link(initial \\ [], opts \\ unquote(opts))
 
       def start_link([], opts), do: start_link(tapas_into(), opts)
