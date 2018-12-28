@@ -59,15 +59,14 @@ defmodule Camarero.MixProject do
 
   defp docs() do
     [
-      main: @app_name,
+      # main: @app_name,
       source_ref: "v#{@version}",
       canonical: "http://hexdocs.pm/#{@app}",
       logo: "stuff/logo-48.png",
       source_url: "https://github.com/am-kantox/#{@app}",
-      # extras: [
-      #   "stuff/#{@app_name}.md",
-      #   "stuff/backends.md"
-      # ],
+      extras: [
+        "stuff/#{@app_name}.md"
+      ],
       groups_for_modules: [
         # Envio
 
