@@ -4,13 +4,13 @@
 
 **Camarero** is a ready-to-use solution to add some JSON API functionality to your existing application, or to implement the read-only JSON API from the scratch when more sophisticated (read: heavy) solutions are not desirable.
 
-![Camarero Ties](https://github.com/am/kantox/camarero/stuff/camarero.png?raw=true)
+![Camarero Ties](https://github.com/am-kantox/camarero/stuff/camarero.png?raw=true)
 
 It is designed to be very simple and handy for read-only web access to the data. It might be a good candidate to replace _Redis_ or any other key-value store. **It is blazingly, dead fast.
 
 Here are response times for the 1M key-value storage behind.
 
-![1M key-value storage lookup: 10μs±](https://github.com/am/kantox/camarero/stuff/1M.png?raw=true)
+![1M key-value storage lookup: 10μs±](https://github.com/am-kantox/camarero/stuff/1M.png?raw=true)
 
 ## Implementation details
 
