@@ -3,6 +3,7 @@ defmodule Camarero.Plato do
   @callback plato_get(key :: binary() | atom()) ::
               {:ok, any()} | :error | {:error, {400 | 404 | non_neg_integer(), map()}}
   @callback plato_put(key :: binary() | atom(), value :: any()) :: :ok
+  @callback plato_delete(key :: binary() | atom()) :: :ok
   @callback plato_route() :: binary()
 
   defmacro __using__(opts \\ []) do
@@ -41,6 +42,14 @@ defmodule Camarero.Plato do
         do: GenServer.cast(__MODULE__, {:plato_put, {key, value}})
 
       @impl true
+      def plato_delete(key) when is_atom(key),
+        do: key |> to_string() |> plato_delete()
+
+      @impl true
+      def plato_delete(key) when is_binary(key),
+        do: GenServer.cast(__MODULE__, {:plato_delete, key})
+
+      @impl true
       def plato_route() do
         __MODULE__
         |> Macro.underscore()
@@ -76,6 +85,12 @@ defmodule Camarero.Plato do
       @impl true
       def handle_cast({:plato_put, {key, value}}, state) do
         {_, result} = tapas_put(state, key, value)
+        {:noreply, result}
+      end
+
+      @impl true
+      def handle_cast({:plato_delete, key}, state) do
+        {_, result} = tapas_delete(state, key)
         {:noreply, result}
       end
 
