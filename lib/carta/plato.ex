@@ -6,11 +6,18 @@ defmodule Camarero.Plato do
   @callback route() :: binary()
 
   defmacro __using__(opts \\ []) do
+    into =
+      Keyword.get(
+        opts,
+        :container,
+        opts
+        |> Keyword.get(:initial, [])
+        |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
+      )
+
     quote do
       use GenServer
-
-      use Camarero.Tapas,
-        into: unquote(Enum.into(opts, %{}, fn {k, v} -> {to_string(k), v} end))
+      use Camarero.Tapas, into: unquote(into)
 
       @behaviour Camarero.Plato
 
