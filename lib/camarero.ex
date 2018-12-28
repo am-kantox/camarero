@@ -9,6 +9,17 @@ defmodule Camarero do
     Module.register_attribute(__MODULE__, :routes, accumulate: true, persist: true)
     @root "/" <> (:camarero |> Application.get_env(:root, "") |> String.trim("/"))
 
+    defp response!(conn, module, param) do
+      {status, response} =
+        case apply(module, :get, [param]) do
+          {:ok, value} -> {200, %{key: param, value: value}}
+          :error -> {404, %{key: param, error: :not_found}}
+          {:error, {status, cause}} -> {status, cause}
+        end
+
+      send_resp(conn, status, Jason.encode!(response))
+    end
+
     Enum.each(
       :camarero
       |> Application.get_env(:carta, [])
@@ -28,14 +39,7 @@ defmodule Camarero do
         end
 
         get("#{route}/:param") do
-          {status, response} =
-            case apply(unquote(module), :get, [param]) do
-              {:ok, value} -> {200, %{key: param, value: value}}
-              :error -> {404, %{key: param, error: :not_found}}
-              {:error, {status, cause}} -> {status, cause}
-            end
-
-          send_resp(conn, status, Jason.encode!(response))
+          response!(conn, unquote(module), param)
         end
       end
     )
@@ -57,8 +61,7 @@ defmodule Camarero do
           })
         )
       else
-        {module, param} ->
-          send_resp(conn, 200, Jason.encode!(apply(module, :get, [param])))
+        {module, param} -> response!(conn, module, param)
       end
     end
 
