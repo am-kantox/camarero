@@ -44,4 +44,26 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") == 42
   end
+
+  test "allows dynamic routes" do
+    Camarero.Catering.route!(Camarero.Carta.DynamicHeartbeat)
+    Camarero.Carta.DynamicHeartbeat.put("existing", 42)
+
+    conn = conn(:get, "/api/v1/dynamic_heartbeat/existing")
+
+    # Invoke the plug
+    conn = Camarero.Handler.call(conn, @opts)
+
+    # Assert the route added
+    assert Camarero.Catering.Routes.state() == %{
+             "dynamic_heartbeat" => Camarero.Carta.DynamicHeartbeat,
+             "heartbeat" => Camarero.Carta.Heartbeat
+           }
+
+    # Assert the response and status
+    assert conn.state == :sent
+    assert conn.status == 200
+    assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
+    assert conn.resp_body |> Jason.decode!() |> Map.get("value") == 42
+  end
 end
