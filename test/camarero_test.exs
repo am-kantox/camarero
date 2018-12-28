@@ -68,10 +68,10 @@ defmodule CamareroTest do
   end
 
   test "allows deletion" do
-    Camarero.Carta.DynamicHeartbeat.plato_put("existing", 42)
-    Camarero.Carta.DynamicHeartbeat.plato_delete("existing")
+    Camarero.Carta.DynamicHeartbeat.plato_put("temporary", 42)
+    Camarero.Carta.DynamicHeartbeat.plato_delete("temporary")
 
-    conn = conn(:get, "/api/v1/heartbeat/existing")
+    conn = conn(:get, "/api/v1/heartbeat/temporary")
 
     # Invoke the plug
     conn = Camarero.Handler.call(conn, @opts)
