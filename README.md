@@ -1,6 +1,6 @@
 # Camarero
 
-**TODO: Add description**
+[![CircleCI](https://circleci.com/gh/am-kantox/camarero.svg?style=svg)](https://circleci.com/gh/am-kantox/camarero) **Lightweight Json API server, embeddable into any project**
 
 ## Installation
 
