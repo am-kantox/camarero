@@ -66,4 +66,14 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") == 42
   end
+
+  test "overriding of existing route is disallowed" do
+    Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
+    assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat
+
+    refute Enum.find(
+             Map.values(Camarero.Catering.Routes.state()),
+             &(&1 == Camarero.Carta.DuplicateHeartbeat)
+           )
+  end
 end

@@ -37,22 +37,38 @@ defmodule Camarero.Catering do
   end
 
   @spec route!(Supervisor.child_spec() | {module(), term()} | module()) :: State.t()
-  def route!(child_spec) when is_atom(child_spec) do
-    with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec),
-         do: Camarero.Catering.Routes.put(apply(child_spec, :plato_route, []), child_spec)
-  end
+  def route!(child_spec) when is_atom(child_spec),
+    do: do_route!(child_spec, child_spec)
 
   def route!({prefix, suffix}) when is_atom(prefix) and is_atom(suffix),
     do: route!(Module.concat(prefix, suffix))
 
-  def route!({module, params} = child_spec) when is_atom(module) and is_list(params) do
-    with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec),
-         do: Camarero.Catering.Routes.put(apply(module, :plato_route, []), module)
-  end
+  def route!({module, params} = child_spec) when is_atom(module) and is_list(params),
+    do: do_route!(child_spec, module)
 
-  def route!(%{start: {module, _, _}} = child_spec) do
-    with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec),
-         do: Camarero.Catering.Routes.put(apply(module, :plato_route, []), module)
+  def route!(%{start: {module, _, _}} = child_spec),
+    do: do_route!(child_spec, module)
+
+  defp do_route!(child_spec, module) do
+    with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec) do
+      route = apply(module, :plato_route, [])
+
+      existing =
+        Enum.find(Camarero.Catering.Routes.state(), fn
+          {^route, _} -> true
+          ^route -> true
+          _ -> false
+        end)
+
+      if existing do
+        Logger.error("""
+          Dynamic overriding of existing route [#{inspect(existing)}] is not allowed.
+          The requested route [#{route} → #{module}] was not added.
+        """)
+      else
+        Camarero.Catering.Routes.put(route, module)
+      end
+    end
   end
 
   @impl true
