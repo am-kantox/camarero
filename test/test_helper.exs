@@ -6,4 +6,11 @@ defmodule Camarero.Carta.DynamicHeartbeat do
   def plato_get(key) when is_binary(key), do: super(key)
 end
 
+defmodule Camarero.Carta.DuplicateHeartbeat do
+  use Camarero.Plato
+
+  @impl true
+  def plato_route(), do: "heartbeat"
+end
+
 ExUnit.start()
