@@ -67,6 +67,21 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") == 42
   end
 
+  test "allows deletion" do
+    Camarero.Carta.DynamicHeartbeat.plato_put("temporary", 42)
+    Camarero.Carta.DynamicHeartbeat.plato_delete("temporary")
+
+    conn = conn(:get, "/api/v1/heartbeat/temporary")
+
+    # Invoke the plug
+    conn = Camarero.Handler.call(conn, @opts)
+
+    # Assert the response and status
+    assert conn.state == :sent
+    assert conn.status == 404
+    assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|error key|
+  end
+
   test "overriding of existing route is disallowed" do
     Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
     assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat
