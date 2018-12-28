@@ -1,5 +1,5 @@
 defmodule Camarero.Plato do
-  @callback all() :: map()
+  @callback all() :: Camarero.Tapas.t()
   @callback get(key :: binary() | atom()) ::
               {:ok, any()} | :error | {:error, {400 | 404 | non_neg_integer(), map()}}
   @callback put(key :: binary() | atom(), value :: any()) :: :ok
@@ -8,8 +8,11 @@ defmodule Camarero.Plato do
   defmacro __using__(opts \\ []) do
     quote do
       use GenServer
+
+      use Camarero.Tapas,
+        into: unquote(Enum.into(opts, %{}, fn {k, v} -> {to_string(k), v} end))
+
       @behaviour Camarero.Plato
-      @initial unquote(Macro.escape(Enum.into(opts, %{}, fn {k, v} -> {to_string(k), v} end)))
 
       @impl true
       def all(), do: GenServer.call(__MODULE__, :all)
@@ -41,7 +44,7 @@ defmodule Camarero.Plato do
 
       def start_link(initial \\ [], opts \\ unquote(opts))
 
-      def start_link([], opts), do: start_link(@initial, opts)
+      def start_link([], opts), do: start_link(tapas_into(), opts)
 
       def start_link(initial, opts) do
         GenServer.start_link(
@@ -60,12 +63,14 @@ defmodule Camarero.Plato do
 
       @impl true
       def handle_call({:get, key}, _from, state) do
-        {:reply, Map.fetch(state, key), state}
+        {:reply, tapas_get(state, key), state}
       end
 
       @impl true
-      def handle_cast({:put, {key, value}}, state),
-        do: {:noreply, Map.put(state, key, value)}
+      def handle_cast({:put, {key, value}}, state) do
+        {_, result} = tapas_put(state, key, value)
+        {:noreply, result}
+      end
 
       defoverridable Camarero.Plato
     end
