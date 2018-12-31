@@ -45,6 +45,21 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") == 42
   end
 
+  test "responds with 200 on the whole resource" do
+    Camarero.Carta.Heartbeat.plato_put("foo1", 42)
+
+    conn = conn(:get, "/api/v1/heartbeat")
+
+    # Invoke the plug
+    conn = Camarero.Handler.call(conn, @opts)
+
+    # Assert the response and status
+    assert conn.state == :sent
+    assert conn.status == 200
+    assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
+    assert conn.resp_body |> Jason.decode!() |> Map.get("value") |> Map.get("foo1") == 42
+  end
+
   test "allows dynamic routes" do
     Camarero.Catering.route!(Camarero.Carta.DynamicHeartbeat)
     Camarero.Carta.DynamicHeartbeat.plato_put("existing", 42)

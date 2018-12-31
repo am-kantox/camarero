@@ -34,6 +34,8 @@ defmodule Camarero.MixProject do
       {:cowboy, "~> 2.0"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
+      {:iteraptor, "~> 1.0", only: :test},
+      {:stream_data, "~> 0.4", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end

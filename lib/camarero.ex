@@ -31,7 +31,7 @@ defmodule Camarero do
         @routes {route, module}
 
         get(route) do
-          values = apply(unquote(module), :all, [])
+          values = apply(unquote(module), :plato_all, [])
 
           send_resp(
             conn,
