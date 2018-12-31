@@ -25,6 +25,7 @@ defmodule Camarero do
     Enum.each(
       :camarero
       |> Application.get_env(:carta, [])
+      |> Enum.map(fn e -> with true <- Code.ensure_compiled?(e), do: e end)
       |> Enum.sort_by(&(&1 |> apply(:plato_route, []) |> String.length()), &>=/2),
       fn module ->
         route = Enum.join([@root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
