@@ -3,5 +3,5 @@ defmodule Camarero.Carta.Heartbeat do
   Ready-to-go implementation of the hearbeat; responds with 299 / empty object
     at `"/api/v1/heartbeat"` endpoint.
   """
-  use Camarero.Plato
+  use Camarero, scaffold: :full
 end
