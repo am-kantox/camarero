@@ -6,17 +6,17 @@ defmodule CamareroTest do
 
   @opts Camarero.Handler.init([])
 
-  # test "responds with 400 on completely wrong path" do
-  #   conn = conn(:get, "/foo")
+  test "responds with 400 on completely wrong path" do
+    conn = conn(:get, "/foo")
 
-  #   # Invoke the plug
-  #   conn = Camarero.Handler.call(conn, @opts)
+    # Invoke the plug
+    conn = Camarero.Handler.call(conn, @opts)
 
-  #   # Assert the response and status
-  #   assert conn.state == :sent
-  #   assert conn.status == 400
-  #   assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|error path|
-  # end
+    # Assert the response and status
+    assert conn.state == :sent
+    assert conn.status == 400
+    assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|error path|
+  end
 
   test "responds with 404 on missing key" do
     conn = conn(:get, "/api/v1/heartbeat/foo")
