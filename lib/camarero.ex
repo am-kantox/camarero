@@ -37,8 +37,8 @@ defmodule Camarero do
       :code.delete(Camarero.Handler)
     end
 
-    IO.puts(Macro.to_string(Macro.expand(handler_ast(), env)))
     ast = handler_ast()
+    IO.puts(Macro.to_string(Macro.expand(ast, env)))
 
     # Macro.Env.location(env))
     Module.create(
@@ -59,60 +59,138 @@ defmodule Camarero do
       |> Enum.reduce(
         {[], []},
         fn module, {routes, ast} ->
-          route = Enum.join([root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
+          endpoint = Enum.join([root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
 
-          {get_all, get_param} =
-            {Macro.expand(
-               quote do
-                 Plug.Router.get unquote(route) do
-                   values = apply(unquote(module), :plato_all, [])
+          path = endpoint
+          route = Plug.Router.__route__(:get, path, true, [])
+          {conn, method, match, params, host, guards, private, assigns} = route
 
-                   send_resp(
-                     conn,
-                     200,
-                     Jason.encode!(%{key: "★", value: values})
-                   )
-                 end
-               end,
-               __ENV__
-             ),
-             Macro.expand(
-               quote do
-                 Plug.Router.get unquote("#{route}/:param") do
-                   response!(conn, unquote(module), param)
-                 end
-               end,
-               __ENV__
-             )}
+          get_all_block =
+            quote do
+              values = apply(unquote(module), :plato_all, [])
 
-          {[{route, module} | routes], [get_all, get_param | ast]}
+              send_resp(
+                conn,
+                200,
+                Jason.encode!(%{key: "★", value: values})
+              )
+            end
+
+          get_all =
+            quote do
+              defp(
+                do_match(unquote(conn), unquote(method), unquote(match), unquote(host))
+                when unquote(guards)
+              ) do
+                unquote(private)
+                unquote(assigns)
+
+                merge_params = fn
+                  %Plug.Conn.Unfetched{} ->
+                    unquote({:%{}, [], params})
+
+                  fetched ->
+                    Map.merge(fetched, unquote({:%{}, [], params}))
+                end
+
+                conn = update_in(unquote(conn).params(), merge_params)
+                conn = update_in(conn.path_params(), merge_params)
+
+                Plug.Router.__put_route__(conn, unquote(path), fn var!(conn) ->
+                  unquote(get_all_block)
+                end)
+              end
+            end
+
+          param = Macro.var(:param, nil)
+
+          path = Enum.join([endpoint, ":param"], "/")
+          route = Plug.Router.__route__(:get, path, true, [])
+          {conn, method, match, params, host, guards, private, assigns} = route
+
+          get_param_block = quote(do: response!(conn, unquote(module), unquote(param)))
+
+          get_param =
+            quote do
+              defp(
+                do_match(unquote(conn), unquote(method), unquote(match), unquote(host))
+                when unquote(guards)
+              ) do
+                unquote(private)
+                unquote(assigns)
+
+                merge_params = fn
+                  %Plug.Conn.Unfetched{} ->
+                    unquote({:%{}, [], params})
+
+                  fetched ->
+                    Map.merge(fetched, unquote({:%{}, [], params}))
+                end
+
+                conn = update_in(unquote(conn).params(), merge_params)
+                conn = update_in(conn.path_params(), merge_params)
+
+                Plug.Router.__put_route__(conn, unquote(path), fn var!(conn) ->
+                  unquote(get_param_block)
+                end)
+              end
+            end
+
+          {[{endpoint, module} | routes], [get_all, get_param | ast]}
         end
       )
 
-    catch_all =
-      Macro.expand(
-        quote do
-          Plug.Router.get unquote("#{root}/*full_path1") do
-            [param | path] = Enum.reverse(full_path1)
-            path = path |> Enum.reverse() |> Enum.join("/")
+    full_path = Macro.var(:full_path, nil)
 
-            with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
-                 {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
-              send_resp(
-                conn,
-                400,
-                Jason.encode!(%{
-                  error: "Handler was not found",
-                  path: Enum.join([@root | full_path1], "/")
-                })
-              )
-            else
-              {module, param} -> response!(conn, module, param)
-            end
+    catch_all_block =
+      quote do
+        [param | path] = Enum.reverse(unquote(full_path))
+        path = path |> Enum.reverse() |> Enum.join("/")
+
+        with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
+             {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
+          send_resp(
+            conn,
+            400,
+            Jason.encode!(%{
+              error: "Handler was not found",
+              path: Enum.join([unquote(root) | unquote(full_path)], "/")
+            })
+          )
+        else
+          {module, param} -> response!(conn, module, param)
+        end
+      end
+
+    path = Enum.join([root, "*full_path"], "/")
+    route = Plug.Router.__route__(:get, path, true, [])
+    {conn, method, match, params, host, guards, private, assigns} = route
+
+    catch_all =
+      quote do
+        defp(
+          do_match(unquote(conn), unquote(method), unquote(match), unquote(host))
+          when unquote(guards)
+        ) do
+          unquote(private)
+          unquote(assigns)
+
+          merge_params = fn
+            %Plug.Conn.Unfetched{} ->
+              unquote({:%{}, [], params})
+
+            fetched ->
+              Map.merge(fetched, unquote({:%{}, [], params}))
           end
-        end,
-        __ENV__
-      )
+
+          conn = update_in(unquote(conn).params(), merge_params)
+          conn = update_in(conn.path_params(), merge_params)
+
+          Plug.Router.__put_route__(conn, unquote(path), fn var!(conn) ->
+            unquote(catch_all_block)
+          end)
+        end
+      end
 
     quote location: :keep do
       @moduledoc false
@@ -140,14 +218,13 @@ defmodule Camarero do
       unquote_splicing([catch_all])
 
       # . . .
-
-      match(_) do
-        send_resp(
-          conn,
-          400,
-          Jason.encode!(%{error: "API root was not met", path: conn.request_path})
-        )
-      end
+      # match(_) do
+      #   send_resp(
+      #     conn,
+      #     400,
+      #     Jason.encode!(%{error: "API root was not met", path: conn.request_path})
+      #   )
+      # end
 
       plug(:dispatch)
     end
