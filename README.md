@@ -34,9 +34,15 @@ The default implementation using `%{}` map as a container, looks pretty simple:
 
 ```elixir
 defmodule Camarero.Carta.Heartbeat do
-  use Camarero.Plato
+  use Camarero
 end
 ```
+
+Three different scaffolding implementations are currently supported with `scaffold: :impl` keyword parameter passed to `use Camarero`:
+
+- `scaffold: :full` [_default_] — the full implementation of `Camarero.Plato` is used;
+- `scaffold: :access` — `Camarero.Tapas` implementation is scaffolded only;
+- `scaffold: :none` — no scaffold is used.
 
 This is an exact exerpt from `Heartbeat` module that comes with this package. For more complicated/sophisticated usages please refer to the [documentation](https://hexdocs.pm/camarero).
 
@@ -44,7 +50,7 @@ All the methods from both `Camarero.Tapas` and `Camarero.Plato` default implemen
 
 ```elixir
 defmodule Camarero.Carta.Heartbeat do
-  use Camarero.Plato, container: %MyStructWithAccessBehaviour{}
+  use Camarero, into: %MyStructWithAccessBehaviour{}
 
   @impl true
   def plato_route(), do: "internal/heartbeat"
@@ -65,7 +71,7 @@ config :camarero,
 ```elixir
 def deps do
   [
-    {:camarero, "~> 0.1"}
+    {:camarero, "~> 0.3"}
   ]
 end
 ```
