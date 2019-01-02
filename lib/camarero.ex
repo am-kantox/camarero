@@ -62,25 +62,56 @@ defmodule Camarero do
           route = Enum.join([root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
 
           {get_all, get_param} =
-            {quote do
-               get unquote(route) do
-                 values = apply(unquote(module), :plato_all, [])
+            {Macro.expand(
+               quote do
+                 Plug.Router.get unquote(route) do
+                   values = apply(unquote(module), :plato_all, [])
 
-                 send_resp(
-                   conn,
-                   200,
-                   Jason.encode!(%{key: "★", value: values})
-                 )
-               end
-             end,
-             quote do
-               get unquote("#{route}/:param") do
-                 response!(conn, unquote(module), param)
-               end
-             end}
+                   send_resp(
+                     conn,
+                     200,
+                     Jason.encode!(%{key: "★", value: values})
+                   )
+                 end
+               end,
+               __ENV__
+             ),
+             Macro.expand(
+               quote do
+                 Plug.Router.get unquote("#{route}/:param") do
+                   response!(conn, unquote(module), param)
+                 end
+               end,
+               __ENV__
+             )}
 
           {[{route, module} | routes], [get_all, get_param | ast]}
         end
+      )
+
+    catch_all =
+      Macro.expand(
+        quote do
+          Plug.Router.get unquote("#{root}/*full_path1") do
+            [param | path] = Enum.reverse(full_path1)
+            path = path |> Enum.reverse() |> Enum.join("/")
+
+            with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
+                 {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
+              send_resp(
+                conn,
+                400,
+                Jason.encode!(%{
+                  error: "Handler was not found",
+                  path: Enum.join([@root | full_path1], "/")
+                })
+              )
+            else
+              {module, param} -> response!(conn, module, param)
+            end
+          end
+        end,
+        __ENV__
       )
 
     quote location: :keep do
@@ -106,25 +137,7 @@ defmodule Camarero do
       def routes, do: unquote(routes)
 
       unquote_splicing(ast)
-
-      get "#{@root}/*full_path1" do
-        [param | path] = Enum.reverse(full_path1)
-        path = path |> Enum.reverse() |> Enum.join("/")
-
-        with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
-             {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
-          send_resp(
-            conn,
-            400,
-            Jason.encode!(%{
-              error: "Handler was not found",
-              path: Enum.join([@root | full_path1], "/")
-            })
-          )
-        else
-          {module, param} -> response!(conn, module, param)
-        end
-      end
+      unquote_splicing([catch_all])
 
       # . . .
 
