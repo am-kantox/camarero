@@ -23,14 +23,12 @@ defmodule Camarero.Plato do
 
   @doc false
   defmacro __using__(opts \\ []) do
+    {into, opts} = Keyword.pop(opts, :into, {:%{}, [], []})
+
     into =
-      Keyword.get(
-        opts,
-        :container,
-        opts
-        |> Keyword.get(:initial, [])
-        |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
-      )
+      quote location: :keep do
+        Enum.into(unquote(into), %{}, fn {k, v} -> {to_string(k), v} end)
+      end
 
     quote do
       use GenServer
@@ -77,22 +75,22 @@ defmodule Camarero.Plato do
       @doc ~s"""
       Starts the `#{__MODULE__}` linked to the current process.
       """
-      @spec start_link(initial :: Keyword.t(), opts :: Keyword.t()) ::
+      @spec start_link(into :: Keyword.t(), opts :: Keyword.t()) ::
               {:ok, pid()} | {:error, {:already_started, pid()} | term()}
-      def start_link(initial \\ [], opts \\ unquote(opts))
+      def start_link(into \\ [], opts \\ unquote(opts))
 
       def start_link([], opts), do: start_link(tapas_into(), opts)
 
-      def start_link(initial, opts) do
+      def start_link(into, opts) do
         GenServer.start_link(
           __MODULE__,
-          initial,
+          into,
           Keyword.put_new(opts, :name, __MODULE__)
         )
       end
 
       @impl true
-      def init(initial), do: {:ok, initial}
+      def init(into), do: {:ok, into}
 
       @impl true
       def handle_call(:plato_all, _from, state),

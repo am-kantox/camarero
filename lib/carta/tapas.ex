@@ -28,13 +28,13 @@ defmodule Camarero.Tapas do
 
   @doc false
   defmacro __using__(opts \\ []) do
-    into = Keyword.get(opts, :into, %{})
+    into = Keyword.get(opts, :into, {:%{}, [], []})
 
     quote do
       @behaviour Camarero.Tapas
 
       @impl true
-      def tapas_into(), do: unquote(Macro.escape(into))
+      def tapas_into(), do: unquote(into)
 
       @impl true
       def tapas_get(bag, key) when is_atom(key), do: tapas_get(bag, to_string(key))
