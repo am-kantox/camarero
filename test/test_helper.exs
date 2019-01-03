@@ -1,5 +1,5 @@
 defmodule Camarero.Carta.DynamicHeartbeat do
-  use Camarero.Plato
+  use Camarero, as: Camarero
 
   @impl true
   def plato_get(key) when is_atom(key), do: super(key)
@@ -7,7 +7,7 @@ defmodule Camarero.Carta.DynamicHeartbeat do
 end
 
 defmodule Camarero.Carta.DuplicateHeartbeat do
-  use Camarero.Plato
+  use Camarero, as: Camarero
 
   @impl true
   def plato_route(), do: "heartbeat"

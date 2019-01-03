@@ -6,6 +6,7 @@ defmodule Camarero do
   defmacro __using__(opts \\ []) do
     scaffold = Keyword.get(opts, :scaffold, :full)
     into = Keyword.get(opts, :into, {:%{}, [], []})
+    env = __CALLER__
 
     [
       quote(location: :keep, do: @after_compile({Camarero, :handler!})),
@@ -22,7 +23,12 @@ defmodule Camarero do
       ),
       quote(
         location: :keep,
-        do: defstruct(handler_fq_name: @handler_fq_name, scaffold: unquote(scaffold))
+        do:
+          defstruct(
+            handler_fq_name: @handler_fq_name,
+            scaffold: unquote(scaffold),
+            __env__: unquote(Macro.escape(env))
+          )
       ),
       case scaffold do
         :full ->
@@ -46,6 +52,7 @@ defmodule Camarero do
   end
 
   # idea by Dave Thomas https://twitter.com/pragdave/status/1077775018942185472
+  @spec handler!(env :: nil | %Macro.Env{}, _bytecode :: binary()) :: {atom(), atom()}
   def handler!(env, _bytecode) do
     fq_name = struct(env.module).handler_fq_name
 
@@ -59,23 +66,25 @@ defmodule Camarero do
 
     Application.put_env(:camarero, :endpoints, endpoints, persistent: true)
 
-    if Code.ensure_compiled?(handler_name) do
-      :code.purge(handler_name)
-      :code.delete(handler_name)
+    handler_ast = handler_ast()
+    remodule!(handler_name, handler_ast, env)
+
+    endpoint_ast = endpoint_ast(handler_name)
+    remodule!(endpoint_name, endpoint_ast, env)
+
+    {handler_name, endpoint_name}
+  end
+
+  @spec remodule!(atom(), any(), %Macro.Env{}) :: {:module, module(), binary(), term()}
+  defp remodule!(name, ast, env) do
+    if Code.ensure_compiled?(name) do
+      :code.purge(name)
+      :code.delete(name)
     end
 
-    handler_ast = handler_ast()
-    endpoint_ast = endpoint_ast(handler_name)
-
     Module.create(
-      handler_name,
-      quote(do: unquote(Macro.expand(handler_ast, env))),
-      Macro.Env.location(env)
-    )
-
-    Module.create(
-      endpoint_name,
-      quote(do: unquote(Macro.expand(endpoint_ast, env))),
+      name,
+      quote(do: unquote(Macro.expand(ast, env))),
       Macro.Env.location(env)
     )
   end
@@ -110,9 +119,15 @@ defmodule Camarero do
   defp handler_ast() do
     root = ("/" <> (:camarero |> Application.get_env(:root, ""))) |> String.trim("/")
 
+    items =
+      if Enum.find(Process.registered(), &(&1 == Camarero.Catering.Routes)) do
+        Map.values(Camarero.Catering.Routes.state())
+      else
+        Application.get_env(:camarero, :carta, [])
+      end
+
     {routes, ast} =
-      :camarero
-      |> Application.get_env(:carta, [])
+      items
       |> Enum.filter(&Code.ensure_compiled?/1)
       |> Enum.sort_by(&(&1 |> apply(:plato_route, []) |> String.length()), &<=/2)
       |> Enum.reduce(
@@ -160,7 +175,10 @@ defmodule Camarero do
           )
         else
           {module, param} ->
-            IO.puts("Accessing #{unquote(full_path)} dynamically. Consider compiling routes.")
+            IO.puts(
+              ~s|Accessing “#{Enum.join(unquote(full_path), "/")}” dynamically. Consider compiling routes.|
+            )
+
             response!(conn, module, param)
         end
       end
@@ -190,7 +208,7 @@ defmodule Camarero do
 
       def routes, do: unquote(routes)
 
-      unquote_splicing(Enum.reverse([catch_all, catch_dynamic | Enum.reverse(ast)]))
+      unquote_splicing(Enum.reverse([catch_all, catch_dynamic | ast]))
 
       plug(:dispatch)
     end

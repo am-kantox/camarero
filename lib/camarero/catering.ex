@@ -100,7 +100,7 @@ defmodule Camarero.Catering do
         """)
       else
         Camarero.Catering.Routes.put(route, module)
-        # Camarero.handler!(%{module: %{handler_fq_name: module}}, nil)
+        Camarero.handler!(struct(module).__env__, nil)
       end
     end
   end
