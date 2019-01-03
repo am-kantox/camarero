@@ -19,12 +19,16 @@ defmodule Camarero.Application do
 
     # List all child processes to be supervised
     children = [
-      Plug.Cowboy.child_spec(
-        scheme: Keyword.get(cowboy, :scheme, @default_scheme),
-        plug: Camarero.Endpoint,
-        options: options
-      ),
       {Camarero.Catering, [catering]}
+      | :camarero
+        |> Application.get_env(:endpoints, [])
+        |> Enum.map(
+          &Plug.Cowboy.child_spec(
+            scheme: Keyword.get(cowboy, :scheme, @default_scheme),
+            plug: &1,
+            options: options
+          )
+        )
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

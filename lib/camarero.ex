@@ -9,6 +9,21 @@ defmodule Camarero do
 
     [
       quote(location: :keep, do: @after_compile({Camarero, :handler!})),
+      quote(
+        location: :keep,
+        do:
+          @handler_fq_name(
+            Keyword.get(
+              unquote(opts),
+              :as,
+              Module.concat(__MODULE__ |> Module.split() |> hd(), "Camarero")
+            )
+          )
+      ),
+      quote(
+        location: :keep,
+        do: defstruct(handler_fq_name: @handler_fq_name, scaffold: unquote(scaffold))
+      ),
       case scaffold do
         :full ->
           quote(
@@ -32,16 +47,35 @@ defmodule Camarero do
 
   # idea by Dave Thomas https://twitter.com/pragdave/status/1077775018942185472
   def handler!(env, _bytecode) do
-    if Code.ensure_compiled?(Camarero.Handler) do
-      :code.purge(Camarero.Handler)
-      :code.delete(Camarero.Handler)
+    fq_name = struct(env.module).handler_fq_name
+
+    handler_name = Module.concat(fq_name, Handler)
+    endpoint_name = Module.concat(fq_name, Endpoint)
+
+    endpoints =
+      [endpoint_name | Application.get_env(:camarero, :endpoints, [])]
+      |> MapSet.new()
+      |> MapSet.to_list()
+
+    Application.put_env(:camarero, :endpoints, endpoints, persistent: true)
+
+    if Code.ensure_compiled?(handler_name) do
+      :code.purge(handler_name)
+      :code.delete(handler_name)
     end
 
-    ast = handler_ast()
+    handler_ast = handler_ast()
+    endpoint_ast = endpoint_ast(handler_name)
 
     Module.create(
-      Camarero.Handler,
-      quote(do: unquote(Macro.expand(ast, env))),
+      handler_name,
+      quote(do: unquote(Macro.expand(handler_ast, env))),
+      Macro.Env.location(env)
+    )
+
+    Module.create(
+      endpoint_name,
+      quote(do: unquote(Macro.expand(endpoint_ast, env))),
       Macro.Env.location(env)
     )
   end
@@ -125,7 +159,9 @@ defmodule Camarero do
             })
           )
         else
-          {module, param} -> response!(conn, module, param)
+          {module, param} ->
+            IO.puts("Accessing #{unquote(full_path)} dynamically. Consider compiling routes.")
+            response!(conn, module, param)
         end
       end
 
@@ -160,37 +196,20 @@ defmodule Camarero do
     end
   end
 
-  defmodule Handler do
-    use Plug.Router
+  defp endpoint_ast(handler) do
+    quote do
+      @moduledoc false
 
-    @root "/" <> (:camarero |> Application.get_env(:root, "") |> String.trim("/"))
+      use Plug.Builder
+      plug(Plug.Logger)
 
-    get("#{@root}/*full_path") do
-      send_resp(
-        conn,
-        503,
-        Jason.encode!(%{
-          error: "Warming up...",
-          path: Enum.join([@root | full_path], "/")
-        })
+      plug(Plug.Parsers,
+        parsers: [:json],
+        pass: ["application/json"],
+        json_decoder: Jason
       )
+
+      plug(unquote(handler))
     end
-
-    plug(:dispatch)
-  end
-
-  defmodule Endpoint do
-    @moduledoc false
-
-    use Plug.Builder
-    plug(Plug.Logger)
-
-    plug(Plug.Parsers,
-      parsers: [:json],
-      pass: ["application/json"],
-      json_decoder: Jason
-    )
-
-    plug(Camarero.Handler)
   end
 end
