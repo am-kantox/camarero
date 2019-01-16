@@ -97,6 +97,20 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|error key|
   end
 
+  test "supports URL-encoded keys" do
+    Camarero.Carta.Heartbeat.plato_put("USD/EUR", 42)
+
+    conn = conn(:get, "/api/v1/heartbeat/USD%2FEUR")
+
+    # Invoke the plug
+    conn = Camarero.Handler.call(conn, @opts)
+
+    # Assert the response and status
+    assert conn.state == :sent
+    assert conn.status == 200
+    assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
+  end
+
   test "overriding of existing route is disallowed" do
     Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
     assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat

@@ -29,6 +29,7 @@ defmodule Camarero.Tapas do
   @doc false
   defmacro __using__(opts \\ []) do
     into = Keyword.get(opts, :into, {:%{}, [], []})
+    uri_decode = Keyword.get(opts, :uri_decode, false)
 
     quote do
       @behaviour Camarero.Tapas
@@ -40,7 +41,9 @@ defmodule Camarero.Tapas do
       def tapas_get(bag, key) when is_atom(key), do: tapas_get(bag, to_string(key))
 
       @impl true
-      def tapas_get(bag, key) when is_binary(key), do: Access.fetch(bag, key)
+      def tapas_get(bag, key) when is_binary(key) do
+        Access.fetch(bag, if(unquote(uri_decode), do: URI.decode(key), else: key))
+      end
 
       @impl true
       def tapas_put(bag, key, value) when is_atom(key),
