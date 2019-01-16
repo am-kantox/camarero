@@ -61,7 +61,6 @@ defmodule CamareroTest do
   end
 
   test "allow plain responses via config" do
-    Camarero.Catering.route!(Camarero.Carta.PlainResponse)
     Camarero.Carta.PlainResponse.plato_put("plain", 42)
 
     conn = conn(:get, "/api/v1/plain_response/plain")
@@ -122,6 +121,24 @@ defmodule CamareroTest do
     assert conn.state == :sent
     assert conn.status == 200
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
+  end
+
+  test "supports all CRUD methods" do
+    conn(:post, "/api/v1/crud", Jason.encode!(%{foo: 42}))
+
+    conns =
+      Enum.map(~w|get delete get|a, fn method ->
+        method
+        |> conn("/api/v1/crud/foo")
+        |> Camarero.Handler.call(@opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [ko | _ok] = Enum.reverse(conns)
+    assert ko.status == 404
+
+    # assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
   end
 
   test "overriding of existing route is disallowed" do

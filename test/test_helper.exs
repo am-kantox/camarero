@@ -13,8 +13,4 @@ defmodule Camarero.Carta.DuplicateHeartbeat do
   def plato_route(), do: "heartbeat"
 end
 
-defmodule Camarero.Carta.PlainResponse do
-  use Camarero, response_as: :value
-end
-
 ExUnit.start()
