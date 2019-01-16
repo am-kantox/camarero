@@ -5,6 +5,7 @@ defmodule Camarero do
 
   defmacro __using__(opts \\ []) do
     scaffold = Keyword.get(opts, :scaffold, :full)
+    response_as = Keyword.get(opts, :response_as, :map)
     into = Keyword.get(opts, :into, {:%{}, [], []})
     env = __CALLER__
 
@@ -26,6 +27,7 @@ defmodule Camarero do
         do:
           defstruct(
             handler_fq_name: @handler_fq_name,
+            response_as: unquote(response_as),
             scaffold: unquote(scaffold),
             __env__: unquote(Macro.escape(env))
           )
@@ -65,7 +67,6 @@ defmodule Camarero do
       |> MapSet.to_list()
 
     Application.put_env(:camarero, :endpoints, endpoints, persistent: true)
-
     handler_ast = handler_ast()
     remodule!(handler_name, handler_ast, env)
 
@@ -116,6 +117,7 @@ defmodule Camarero do
     end
   end
 
+  @spec handler_ast() :: term()
   defp handler_ast() do
     root = ("/" <> (:camarero |> Application.get_env(:root, ""))) |> String.trim("/")
 
@@ -175,9 +177,9 @@ defmodule Camarero do
           )
         else
           {module, param} ->
-            IO.puts(
+            Logger.warn(fn ->
               ~s|Accessing “#{Enum.join(unquote(full_path), "/")}” dynamically. Consider compiling routes.|
-            )
+            end)
 
             response!(conn, module, param)
         end
@@ -188,6 +190,8 @@ defmodule Camarero do
 
     quote location: :keep do
       @moduledoc false
+
+      require Logger
 
       use Plug.Router
       plug(:match)
@@ -201,6 +205,20 @@ defmodule Camarero do
             {:ok, value} -> {200, %{key: param, value: value}}
             :error -> {404, %{key: param, error: :not_found}}
             {:error, {status, cause}} -> {status, cause}
+          end
+
+        response =
+          case struct(module).response_as do
+            :map ->
+              response
+
+            :value ->
+              with %{} <- response,
+                   [{_, _}, {_, value}] <- Map.to_list(response),
+                   do: value
+
+            _ ->
+              response
           end
 
         send_resp(conn, status, Jason.encode!(response))

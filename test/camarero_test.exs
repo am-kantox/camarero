@@ -60,6 +60,21 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") |> Map.get("foo1") == 42
   end
 
+  test "allow plain responses via config" do
+    Camarero.Catering.route!(Camarero.Carta.PlainResponse)
+    Camarero.Carta.PlainResponse.plato_put("plain", 42)
+
+    conn = conn(:get, "/api/v1/plain_response/plain")
+
+    # Invoke the plug
+    conn = Camarero.Handler.call(conn, @opts)
+
+    # Assert the response and status
+    assert conn.state == :sent
+    assert conn.status == 200
+    assert conn.resp_body |> Jason.decode!() == 42
+  end
+
   test "allows dynamic routes" do
     Camarero.Catering.route!(Camarero.Carta.DynamicHeartbeat)
     Camarero.Carta.DynamicHeartbeat.plato_put("existing", 42)
@@ -70,10 +85,8 @@ defmodule CamareroTest do
     conn = Camarero.Handler.call(conn, @opts)
 
     # Assert the route added
-    assert Camarero.Catering.Routes.state() == %{
-             "dynamic_heartbeat" => Camarero.Carta.DynamicHeartbeat,
-             "heartbeat" => Camarero.Carta.Heartbeat
-           }
+    assert Camarero.Catering.Routes.state()["dynamic_heartbeat"] ==
+             Camarero.Carta.DynamicHeartbeat
 
     # Assert the response and status
     assert conn.state == :sent
