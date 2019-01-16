@@ -81,6 +81,7 @@ defmodule Camarero do
       |> MapSet.to_list()
 
     Application.put_env(:camarero, :endpoints, endpoints, persistent: true)
+
     handler_ast = handler_ast()
     remodule!(handler_name, handler_ast, env)
 
@@ -144,14 +145,12 @@ defmodule Camarero do
 
     {routes, ast} =
       items
-      # |> Enum.filter(&Code.ensure_compiled?/1)
-      # |> IO.inspect(label: "★★★★★")
+      |> Enum.filter(&Code.ensure_compiled?/1)
       |> Enum.sort_by(&(&1 |> apply(:plato_route, []) |> String.length()), &<=/2)
       |> Enum.reduce(
         {[], []},
         fn module, {routes, ast} ->
           endpoint = Enum.join([root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
-          struct(module).methods |> IO.inspect(label: "★★★")
 
           {get_routes, get_ast} =
             if Enum.find(struct(module).methods, &(&1 == :get)) do
@@ -163,7 +162,7 @@ defmodule Camarero do
                     conn,
                     200,
                     Jason.encode!(
-                      case unquote(module).response_as do
+                      case struct(unquote(module)).response_as do
                         :value -> values
                         :map -> %{key: "★", value: values}
                         _ -> values
@@ -203,7 +202,12 @@ defmodule Camarero do
           {delete_routes, delete_ast} =
             if Enum.find(struct(module).methods, &(&1 == :delete)) do
               param = Macro.var(:param, nil)
-              delete_param_block = quote(do: response!(conn, unquote(module), unquote(param)))
+
+              delete_param_block =
+                quote do
+                  apply(unquote(module), :plato_delete, [unquote(param)])
+                  send_resp(conn, 200, "")
+                end
 
               delete_param =
                 handler_wrapper(:delete, Enum.join([endpoint, ":param"], "/"), delete_param_block)
@@ -286,7 +290,7 @@ defmodule Camarero do
         send_resp(conn, status, Jason.encode!(response))
       end
 
-      def routes, do: unquote(routes)
+      def routes, do: unquote(Macro.escape(routes))
 
       unquote_splicing(Enum.reverse([catch_all, catch_dynamic | ast]))
 
