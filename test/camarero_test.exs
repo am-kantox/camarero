@@ -85,11 +85,8 @@ defmodule CamareroTest do
     conn = Camarero.Handler.call(conn, @opts)
 
     # Assert the route added
-    assert Camarero.Catering.Routes.state() == %{
-             "dynamic_heartbeat" => Camarero.Carta.DynamicHeartbeat,
-             "heartbeat" => Camarero.Carta.Heartbeat,
-             "plain_response" => Camarero.Carta.PlainResponse
-           }
+    assert Camarero.Catering.Routes.state()["dynamic_heartbeat"] ==
+             Camarero.Carta.DynamicHeartbeat
 
     # Assert the response and status
     assert conn.state == :sent
