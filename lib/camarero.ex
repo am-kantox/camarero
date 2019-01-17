@@ -17,11 +17,11 @@ defmodule Camarero do
       |> Macro.expand(__CALLER__)
       |> case do
         nil -> [:get]
-        method when is_atom(method) -> [method]
+        method when method in @allowed_methods -> [method]
         list when is_list(list) -> list
       end
-      |> Enum.map(&(&1 |> to_string() |> String.to_existing_atom()))
-      |> Enum.filter(&([&1] -- @allowed_methods == []))
+      |> Enum.map(&(&1 |> to_string() |> String.downcase() |> String.to_existing_atom()))
+      |> Enum.filter(&(&1 in @allowed_methods))
 
     [
       quote(location: :keep, do: @after_compile({Camarero, :handler!})),
