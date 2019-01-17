@@ -127,7 +127,7 @@ defmodule CamareroTest do
   test "supports all CRUD methods" do
     conn =
       :post
-      |> conn("/api/v1/heartbeat", %{key: "foo", value: 42})
+      |> conn("/api/v1/crud", %{key: "foo", value: 42})
       |> Camarero.Handler.call(@opts)
 
     assert conn.status == 200
@@ -135,7 +135,7 @@ defmodule CamareroTest do
     conns =
       Enum.map(~w|get delete get delete|a, fn method ->
         method
-        |> conn("/api/v1/heartbeat/foo")
+        |> conn("/api/v1/crud/foo")
         |> Camarero.Handler.call(@opts)
       end)
 

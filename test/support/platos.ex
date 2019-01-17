@@ -3,4 +3,5 @@ defmodule Camarero.Carta.PlainResponse do
 end
 
 defmodule Camarero.Carta.Crud do
+  use Camarero, as: Camarero, methods: ~w|post get delete|a
 end

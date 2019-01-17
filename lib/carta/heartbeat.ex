@@ -4,5 +4,5 @@ defmodule Camarero.Carta.Heartbeat do
     at `"/api/v1/heartbeat"` endpoint.
   """
 
-  use Camarero, as: Camarero, methods: ~w|post get delete|a
+  use Camarero, as: Camarero
 end
