@@ -88,4 +88,68 @@ end
 
 Sure it is.
 
+## Benchmarks
+
+To benchmark the application one should install [`wrk`](), run the application
+and the run the `wrk.sh` script located in `wrk` folder.
+
+Here are the results it produced on my laptop.
+
+```
+=================================================================
+ NB! Make sure you have a running Camarero app:
+
+      mix clean && mix run --preload-modules --no-halt
+=================================================================
+
+ Performing 10 sec POSTs and 5 sec GETs afterwards.
+ This will INSERT 300K key-values approx and READ 200K approx.
+
+=================================================================
+
+Running 10s test @ http://127.0.0.1:4001/api/v1/crud
+  24 threads and 1000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    44.91ms   48.53ms 422.59ms   83.52%
+    Req/Sec     1.29k   212.59     3.09k    74.36%
+  311912 requests in 10.10s, 42.59MB read
+Requests/sec:  30884.14
+Transfer/sec:      4.22MB
+Running 5s test @ http://127.0.0.1:4001/api/v1/crud
+  24 threads and 1000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    39.35ms   45.92ms 401.63ms   84.53%
+    Req/Sec     1.48k   375.94     4.71k    79.09%
+  179565 requests in 5.10s, 30.11MB read
+Requests/sec:  35211.34
+Transfer/sec:      5.90MB
+
+=================================================================
+
+ Performing 10 sec POSTs and 5 sec DELETEs afterwards.
+ This will INSERT 300K key-values approx and DELETE 200K approx.
+
+=================================================================
+
+Running 10s test @ http://127.0.0.1:4001/api/v1/crud
+  24 threads and 1000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    46.32ms   52.38ms 457.89ms   84.01%
+    Req/Sec     1.31k   302.33     5.09k    79.26%
+  316401 requests in 10.10s, 43.20MB read
+Requests/sec:  31332.56
+Transfer/sec:      4.28MB
+Running 5s test @ http://127.0.0.1:4001/api/v1/crud
+  24 threads and 1000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    40.17ms   46.46ms 406.37ms   84.13%
+    Req/Sec     1.49k   360.10     6.55k    84.83%
+  179722 requests in 5.10s, 38.97MB read
+  Non-2xx or 3xx responses: 171428
+Requests/sec:  35241.01
+Transfer/sec:      7.64MB
+
+=================================================================
+```
+
 ## [Documentation](http://hexdocs.pm/camarero)
