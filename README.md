@@ -145,7 +145,6 @@ Running 5s test @ http://127.0.0.1:4001/api/v1/crud
     Latency    40.17ms   46.46ms 406.37ms   84.13%
     Req/Sec     1.49k   360.10     6.55k    84.83%
   179722 requests in 5.10s, 38.97MB read
-  Non-2xx or 3xx responses: 171428
 Requests/sec:  35241.01
 Transfer/sec:      7.64MB
 
