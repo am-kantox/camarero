@@ -168,7 +168,7 @@ defmodule Camarero do
         fn module, {routes, ast} ->
           endpoint = Enum.join([root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
 
-          {get_routes, get_ast} =
+          {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :get)) do
               get_all_block =
                 quote do
@@ -195,12 +195,12 @@ defmodule Camarero do
               get_param =
                 handler_wrapper(:get, Enum.join([endpoint, ":param"], "/"), get_param_block)
 
-              {[{:get, endpoint, module}], [get_all, get_param]}
+              {[{:get, endpoint, module} | routes], [get_all, get_param | ast]}
             else
-              {[], []}
+              {routes, ast}
             end
 
-          {post_routes, post_ast} =
+          {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :post)) do
               post_block =
                 quote do
@@ -226,12 +226,12 @@ defmodule Camarero do
 
               post_all = handler_wrapper(:post, endpoint, post_block)
 
-              {[{:post, endpoint, module}], [post_all]}
+              {[{:post, endpoint, module} | routes], [post_all | ast]}
             else
-              {[], []}
+              {routes, ast}
             end
 
-          {delete_routes, delete_ast} =
+          {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :delete)) do
               param = Macro.var(:param, nil)
 
@@ -268,15 +268,12 @@ defmodule Camarero do
               delete_param =
                 handler_wrapper(:delete, Enum.join([endpoint, ":param"], "/"), delete_param_block)
 
-              {[{:delete, endpoint, module}], [delete_param]}
+              {[{:delete, endpoint, module} | routes], [delete_param | ast]}
             else
-              {[], []}
+              {routes, ast}
             end
 
-          {
-            get_routes ++ post_routes ++ delete_routes ++ routes,
-            get_ast ++ post_ast ++ delete_ast ++ ast
-          }
+          {routes, ast}
         end
       )
 
