@@ -188,8 +188,24 @@ defmodule Camarero do
             if Enum.find(struct(module).methods, &(&1 == :post)) do
               post_block =
                 quote do
-                  apply(unquote(module), :plato_put, [:key, :value])
-                  send_resp(conn, 200, "")
+                  case conn.params do
+                    %{"key" => key, "value" => value} ->
+                      apply(unquote(module), :plato_put, [key, value])
+                      send_resp(conn, 200, "")
+
+                    payload ->
+                      send_resp(
+                        conn,
+                        412,
+                        Jason.encode!(
+                          %{
+                            errors: ["JSON object with both “key” and “value” keys is required"],
+                            payload: payload
+                          },
+                          []
+                        )
+                      )
+                  end
                 end
 
               post_all = handler_wrapper(:post, endpoint, post_block)

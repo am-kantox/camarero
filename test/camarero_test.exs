@@ -125,7 +125,12 @@ defmodule CamareroTest do
   end
 
   test "supports all CRUD methods" do
-    conn(:post, "/api/v1/heartbeat", Jason.encode!(%{foo: 42}))
+    conn =
+      :post
+      |> conn("/api/v1/heartbeat", %{key: "foo", value: 42})
+      |> Camarero.Handler.call(@opts)
+
+    assert conn.status == 200
 
     conns =
       Enum.map(~w|get delete get|a, fn method ->
@@ -136,8 +141,9 @@ defmodule CamareroTest do
 
     # Assert the response and status
     assert Enum.all?(conns, &(&1.state == :sent))
-    [ko | _ok] = Enum.reverse(conns)
+    [ko | ok] = Enum.reverse(conns)
     assert ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
 
     # assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
   end
