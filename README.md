@@ -71,11 +71,21 @@ config :camarero,
 ```elixir
 def deps do
   [
-    {:camarero, "~> 0.3"}
+    {:camarero, "~> 0.4"}
   ]
 end
 ```
 
+## Changelog
+
+### `0.4.0`
+
+- basic CRUD (`GET /`, `GET /:id`, `POST /`, `DELETE /:id`),
+- better support for many handlers,
+- `response_as: :value` to return raw values instead of valid JSON objects.
+
 ## Is it of any good?
 
 Sure it is.
+
+## [Documentation](http://hexdocs.pm/camarero)
