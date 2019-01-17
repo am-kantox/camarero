@@ -100,7 +100,7 @@ defmodule Camarero do
       remodule!(endpoint_name, endpoint_ast, env)
     rescue
       CompileError ->
-        waiting = round(:rand.uniform() * 1_000)
+        waiting = round(:rand.uniform() * 100)
         Logger.debug("Deferring creation of #{env.module} for #{waiting} ms")
         Process.sleep(waiting)
         rehandler!(handler_name, endpoint_name, env)
@@ -237,8 +237,32 @@ defmodule Camarero do
 
               delete_param_block =
                 quote do
-                  apply(unquote(module), :plato_delete, [unquote(param)])
-                  send_resp(conn, 200, "")
+                  # * TODO Maybe avoid get before delete? Parameterize?
+                  case apply(unquote(module), :plato_get, [unquote(param)]) do
+                    :error ->
+                      send_resp(
+                        conn,
+                        412,
+                        Jason.encode!(%{
+                          errors: ["Inexisting key [#{unquote(param)}]"],
+                          payload: conn.params
+                        })
+                      )
+
+                    {:ok, value} ->
+                      apply(unquote(module), :plato_delete, [unquote(param)])
+                      send_resp(conn, 200, Jason.encode!(%{key: unquote(param), value: value}))
+
+                    other ->
+                      send_resp(
+                        conn,
+                        503,
+                        Jason.encode!(%{
+                          errors: ["You’ve found a bug; please report it :)"],
+                          unexpected_value: inspect(other)
+                        })
+                      )
+                  end
                 end
 
               delete_param =

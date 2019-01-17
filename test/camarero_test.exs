@@ -133,7 +133,7 @@ defmodule CamareroTest do
     assert conn.status == 200
 
     conns =
-      Enum.map(~w|get delete get|a, fn method ->
+      Enum.map(~w|get delete get delete|a, fn method ->
         method
         |> conn("/api/v1/heartbeat/foo")
         |> Camarero.Handler.call(@opts)
@@ -141,8 +141,9 @@ defmodule CamareroTest do
 
     # Assert the response and status
     assert Enum.all?(conns, &(&1.state == :sent))
-    [ko | ok] = Enum.reverse(conns)
-    assert ko.status == 404
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 412
+    assert get_ko.status == 404
     assert Enum.all?(ok, &(&1.status == 200))
 
     # assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
