@@ -2,6 +2,7 @@ defmodule Camarero do
   @moduledoc false
 
   require Plug.Router
+  require Logger
 
   @allowed_methods ~w|get post delete|a
 
@@ -75,6 +76,15 @@ defmodule Camarero do
     handler_name = Module.concat(fq_name, Handler)
     endpoint_name = Module.concat(fq_name, Endpoint)
 
+    # ? FIXME THIS IS AN UGLY HACK UNTIL I WILL FIND THE PROPER SOLUTION
+    #! <UGLY HACK>
+    rehandler!(handler_name, endpoint_name, env)
+    #! </UGLY HACK>
+
+    {handler_name, endpoint_name}
+  end
+
+  defp rehandler!(handler_name, endpoint_name, env) do
     endpoints =
       [endpoint_name | Application.get_env(:camarero, :endpoints, [])]
       |> MapSet.new()
@@ -82,13 +92,19 @@ defmodule Camarero do
 
     Application.put_env(:camarero, :endpoints, endpoints, persistent: true)
 
-    handler_ast = handler_ast()
-    remodule!(handler_name, handler_ast, env)
+    try do
+      handler_ast = handler_ast()
+      remodule!(handler_name, handler_ast, env)
 
-    endpoint_ast = endpoint_ast(handler_name)
-    remodule!(endpoint_name, endpoint_ast, env)
-
-    {handler_name, endpoint_name}
+      endpoint_ast = endpoint_ast(handler_name)
+      remodule!(endpoint_name, endpoint_ast, env)
+    rescue
+      CompileError ->
+        waiting = round(:rand.uniform() * 1_000)
+        Logger.debug("Deferring creation of #{env.module} for #{waiting} ms")
+        Process.sleep(waiting)
+        rehandler!(handler_name, endpoint_name, env)
+    end
   end
 
   @spec remodule!(atom(), any(), %Macro.Env{}) :: {:module, module(), binary(), term()}
