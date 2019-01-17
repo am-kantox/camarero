@@ -124,6 +124,31 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
   end
 
+  test "supports all CRUD methods" do
+    conn =
+      :post
+      |> conn("/api/v1/crud", %{key: "foo", value: 42})
+      |> Camarero.Handler.call(@opts)
+
+    assert conn.status == 200
+
+    conns =
+      Enum.map(~w|get delete get delete|a, fn method ->
+        method
+        |> conn("/api/v1/crud/foo")
+        |> Camarero.Handler.call(@opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 412
+    assert get_ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
+
+    # assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
+  end
+
   test "overriding of existing route is disallowed" do
     Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
     assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat

@@ -2,12 +2,26 @@ defmodule Camarero do
   @moduledoc false
 
   require Plug.Router
+  require Logger
+
+  @allowed_methods ~w|get post delete|a
 
   defmacro __using__(opts \\ []) do
-    scaffold = Keyword.get(opts, :scaffold, :full)
-    response_as = Keyword.get(opts, :response_as, :map)
-    into = Keyword.get(opts, :into, {:%{}, [], []})
     env = __CALLER__
+    into = Keyword.get(opts, :into, {:%{}, [], []})
+    response_as = Keyword.get(opts, :response_as, :map)
+    scaffold = Keyword.get(opts, :scaffold, :full)
+
+    methods =
+      opts[:methods]
+      |> Macro.expand(__CALLER__)
+      |> case do
+        nil -> [:get]
+        method when method in @allowed_methods -> [method]
+        list when is_list(list) -> list
+      end
+      |> Enum.map(&(&1 |> to_string() |> String.downcase() |> String.to_existing_atom()))
+      |> Enum.filter(&(&1 in @allowed_methods))
 
     [
       quote(location: :keep, do: @after_compile({Camarero, :handler!})),
@@ -27,6 +41,7 @@ defmodule Camarero do
         do:
           defstruct(
             handler_fq_name: @handler_fq_name,
+            methods: unquote(methods),
             response_as: unquote(response_as),
             scaffold: unquote(scaffold),
             __env__: unquote(Macro.escape(env))
@@ -61,19 +76,35 @@ defmodule Camarero do
     handler_name = Module.concat(fq_name, Handler)
     endpoint_name = Module.concat(fq_name, Endpoint)
 
+    # ? FIXME THIS IS AN UGLY HACK UNTIL I WILL FIND THE PROPER SOLUTION
+    #! <UGLY HACK>
+    rehandler!(handler_name, endpoint_name, env)
+    #! </UGLY HACK>
+
+    {handler_name, endpoint_name}
+  end
+
+  defp rehandler!(handler_name, endpoint_name, env) do
     endpoints =
       [endpoint_name | Application.get_env(:camarero, :endpoints, [])]
       |> MapSet.new()
       |> MapSet.to_list()
 
     Application.put_env(:camarero, :endpoints, endpoints, persistent: true)
-    handler_ast = handler_ast()
-    remodule!(handler_name, handler_ast, env)
 
-    endpoint_ast = endpoint_ast(handler_name)
-    remodule!(endpoint_name, endpoint_ast, env)
+    try do
+      handler_ast = handler_ast()
+      remodule!(handler_name, handler_ast, env)
 
-    {handler_name, endpoint_name}
+      endpoint_ast = endpoint_ast(handler_name)
+      remodule!(endpoint_name, endpoint_ast, env)
+    rescue
+      CompileError ->
+        waiting = round(:rand.uniform() * 100)
+        Logger.debug("Deferring creation of #{env.module} for #{waiting} ms")
+        Process.sleep(waiting)
+        rehandler!(handler_name, endpoint_name, env)
+    end
   end
 
   @spec remodule!(atom(), any(), %Macro.Env{}) :: {:module, module(), binary(), term()}
@@ -90,10 +121,10 @@ defmodule Camarero do
     )
   end
 
-  @spec handler_wrapper(endpoint :: binary(), block :: any()) :: any()
-  defp handler_wrapper(endpoint, block) do
+  @spec handler_wrapper(method :: atom(), endpoint :: binary(), block :: any()) :: any()
+  defp handler_wrapper(method, endpoint, block) when method in @allowed_methods do
     path = endpoint
-    route = Plug.Router.__route__(:get, path, true, [])
+    route = Plug.Router.__route__(method, path, true, [])
     {conn, method, match, params, host, guards, private, assigns} = route
 
     quote do
@@ -137,24 +168,112 @@ defmodule Camarero do
         fn module, {routes, ast} ->
           endpoint = Enum.join([root, module |> apply(:plato_route, []) |> String.trim("/")], "/")
 
-          get_all_block =
-            quote do
-              values = apply(unquote(module), :plato_all, [])
+          {routes, ast} =
+            if Enum.find(struct(module).methods, &(&1 == :get)) do
+              get_all_block =
+                quote do
+                  values = apply(unquote(module), :plato_all, [])
 
-              send_resp(
-                conn,
-                200,
-                Jason.encode!(%{key: "★", value: values})
-              )
+                  send_resp(
+                    conn,
+                    200,
+                    Jason.encode!(
+                      case struct(unquote(module)).response_as do
+                        :value -> values
+                        :map -> %{key: "★", value: values}
+                        _ -> values
+                      end
+                    )
+                  )
+                end
+
+              get_all = handler_wrapper(:get, endpoint, get_all_block)
+
+              param = Macro.var(:param, nil)
+              get_param_block = quote(do: response!(conn, unquote(module), unquote(param)))
+
+              get_param =
+                handler_wrapper(:get, Enum.join([endpoint, ":param"], "/"), get_param_block)
+
+              {[{:get, endpoint, module} | routes], [get_all, get_param | ast]}
+            else
+              {routes, ast}
             end
 
-          get_all = handler_wrapper(endpoint, get_all_block)
+          {routes, ast} =
+            if Enum.find(struct(module).methods, &(&1 == :post)) do
+              post_block =
+                quote do
+                  case conn.params do
+                    %{"key" => key, "value" => value} ->
+                      apply(unquote(module), :plato_put, [key, value])
+                      send_resp(conn, 200, "")
 
-          param = Macro.var(:param, nil)
-          get_param_block = quote(do: response!(conn, unquote(module), unquote(param)))
-          get_param = handler_wrapper(Enum.join([endpoint, ":param"], "/"), get_param_block)
+                    payload ->
+                      send_resp(
+                        conn,
+                        412,
+                        Jason.encode!(
+                          %{
+                            errors: ["JSON object with both “key” and “value” keys is required"],
+                            payload: payload
+                          },
+                          []
+                        )
+                      )
+                  end
+                end
 
-          {[{endpoint, module} | routes], [get_all, get_param | ast]}
+              post_all = handler_wrapper(:post, endpoint, post_block)
+
+              {[{:post, endpoint, module} | routes], [post_all | ast]}
+            else
+              {routes, ast}
+            end
+
+          {routes, ast} =
+            if Enum.find(struct(module).methods, &(&1 == :delete)) do
+              param = Macro.var(:param, nil)
+
+              delete_param_block =
+                quote do
+                  # * TODO Maybe avoid get before delete? Parameterize?
+                  case apply(unquote(module), :plato_get, [unquote(param)]) do
+                    :error ->
+                      send_resp(
+                        conn,
+                        412,
+                        Jason.encode!(%{
+                          errors: ["Inexisting key [#{unquote(param)}]"],
+                          payload: conn.params
+                        })
+                      )
+
+                    {:ok, value} ->
+                      apply(unquote(module), :plato_delete, [unquote(param)])
+                      send_resp(conn, 200, Jason.encode!(%{key: unquote(param), value: value}))
+
+                    other ->
+                      send_resp(
+                        conn,
+                        503,
+                        Jason.encode!(%{
+                          errors: ["You’ve found a bug; please report it :)"],
+                          unexpected_value: inspect(other)
+                        })
+                      )
+                  end
+                end
+
+              delete_param =
+                handler_wrapper(:delete, Enum.join([endpoint, ":param"], "/"), delete_param_block)
+
+              {[{:delete, endpoint, module} | routes], [delete_param | ast]}
+            else
+              {routes, ast}
+            end
+
+          {routes, ast}
         end
       )
 
@@ -185,8 +304,8 @@ defmodule Camarero do
         end
       end
 
-    catch_dynamic = handler_wrapper(Enum.join([root, "*full_path"], "/"), catch_all_block)
-    catch_all = handler_wrapper("/*full_path", catch_all_block)
+    catch_dynamic = handler_wrapper(:get, Enum.join([root, "*full_path"], "/"), catch_all_block)
+    catch_all = handler_wrapper(:get, "/*full_path", catch_all_block)
 
     quote location: :keep do
       @moduledoc false
@@ -224,7 +343,7 @@ defmodule Camarero do
         send_resp(conn, status, Jason.encode!(response))
       end
 
-      def routes, do: unquote(routes)
+      def routes, do: unquote(Macro.escape(routes))
 
       unquote_splicing(Enum.reverse([catch_all, catch_dynamic | ast]))
 
