@@ -90,8 +90,8 @@ Sure it is.
 
 ## Benchmarks
 
-To benchmark the application one should install [`wrk`](), run the application
-and the run the `wrk.sh` script located in `wrk` folder.
+To benchmark the application one should install [`wrk`](https://github.com/wg/wrk),
+run the application and the run the `wrk.sh` script located in `wrk` folder.
 
 Here are the results it produced on my laptop.
 
