@@ -6,7 +6,7 @@
 
 ![Camarero Ties](https://raw.githubusercontent.com/am-kantox/camarero/master/stuff/camarero.png)
 
-It is designed to be very simple and handy for read-only web access to the data. It might be a good candidate to replace _Redis_ or any other key-value store. **It is blazingly, dead fast**.
+It is designed to be very simple and handy for read-only web access to the data. It might be a good candidate to replace _Redis_ or any other key-value store. **It is blazingly, deadly fast**.
 
 Here are response times for the 1M key-value storage behind.
 
