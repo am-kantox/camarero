@@ -6,7 +6,7 @@
 
 ![Camarero Ties](https://raw.githubusercontent.com/am-kantox/camarero/master/stuff/camarero.png)
 
-It is designed to be very simple and handy for read-only web access to the data. It might be a good candidate to replace _Redis_ or any other key-value store. **It is blazingly, dead fast.
+It is designed to be very simple and handy for read-only web access to the data. It might be a good candidate to replace _Redis_ or any other key-value store. **It is blazingly, dead fast**.
 
 Here are response times for the 1M key-value storage behind.
 
@@ -91,7 +91,7 @@ Sure it is.
 ## Benchmarks
 
 To benchmark the application one should install [`wrk`](https://github.com/wg/wrk),
-run the application and the run the `wrk.sh` script located in `wrk` folder.
+run the application and _then_ run the `wrk.sh` script located in `wrk` folder.
 
 Here are the results it produced on my laptop.
 
