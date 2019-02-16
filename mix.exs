@@ -3,7 +3,7 @@ defmodule Camarero.MixProject do
 
   @app :camarero
   @app_name "camarero"
-  @version "0.4.0"
+  @version "0.4.1"
 
   def project do
     [
@@ -35,7 +35,7 @@ defmodule Camarero.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:plug, "~> 1.7"},
+      {:plug, "~> 1.7.2"},
       {:cowboy, "~> 2.0"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},

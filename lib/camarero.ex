@@ -24,9 +24,10 @@ defmodule Camarero do
       |> Enum.filter(&(&1 in @allowed_methods))
 
     [
-      quote(location: :keep, do: @after_compile({Camarero, :handler!})),
+      quote(generated: true, do: @compile {:autoload, true}),
+      quote(generated: true, do: @after_compile({Camarero, :handler!})),
       quote(
-        location: :keep,
+        generated: true, location: :keep,
         do:
           @handler_fq_name(
             Keyword.get(
@@ -37,7 +38,7 @@ defmodule Camarero do
           )
       ),
       quote(
-        location: :keep,
+        generated: true, location: :keep,
         do:
           defstruct(
             handler_fq_name: @handler_fq_name,
@@ -50,15 +51,13 @@ defmodule Camarero do
       case scaffold do
         :full ->
           quote(
-            # bind_quoted: [into: into],
-            location: :keep,
+            generated: true, location: :keep,
             do: use(Camarero.Plato, into: unquote(into))
           )
 
         :access ->
           quote(
-            # bind_quoted: [into: into],
-            location: :keep,
+            generated: true, location: :keep,
             do: use(Camarero.Tapas, into: unquote(into))
           )
 
@@ -78,7 +77,9 @@ defmodule Camarero do
 
     # ? FIXME THIS IS AN UGLY HACK UNTIL I WILL FIND THE PROPER SOLUTION
     #! <UGLY HACK>
+    Code.compiler_options(ignore_module_conflict: true)
     rehandler!(handler_name, endpoint_name, env)
+    Code.compiler_options(ignore_module_conflict: false)
     #! </UGLY HACK>
 
     {handler_name, endpoint_name}
@@ -116,7 +117,7 @@ defmodule Camarero do
 
     Module.create(
       name,
-      quote(do: unquote(Macro.expand(ast, env))),
+      quote(generated: true, do: unquote(Macro.expand(ast, env))),
       Macro.Env.location(env)
     )
   end
@@ -127,7 +128,7 @@ defmodule Camarero do
     route = Plug.Router.__route__(method, path, true, [])
     {conn, method, match, params, host, guards, private, assigns} = route
 
-    quote do
+    quote generated: true do
       defp(
         do_match(unquote(conn), unquote(method), unquote(match), unquote(host))
         when unquote(guards)
@@ -143,7 +144,7 @@ defmodule Camarero do
         conn = update_in(unquote(conn).params(), merge_params)
         conn = update_in(conn.path_params(), merge_params)
 
-        Plug.Router.__put_route__(conn, unquote(path), fn conn -> unquote(block) end)
+        Plug.Router.__put_route__(conn, unquote(path), fn conn, opts -> unquote(block) end)
       end
     end
   end
@@ -171,7 +172,7 @@ defmodule Camarero do
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :get)) do
               get_all_block =
-                quote do
+                quote generated: true do
                   values = apply(unquote(module), :plato_all, [])
 
                   send_resp(
@@ -190,7 +191,7 @@ defmodule Camarero do
               get_all = handler_wrapper(:get, endpoint, get_all_block)
 
               param = Macro.var(:param, nil)
-              get_param_block = quote(do: response!(conn, unquote(module), unquote(param)))
+              get_param_block = quote(generated: true, do: response!(conn, unquote(module), unquote(param)))
 
               get_param =
                 handler_wrapper(:get, Enum.join([endpoint, ":param"], "/"), get_param_block)
@@ -203,7 +204,7 @@ defmodule Camarero do
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :post)) do
               post_block =
-                quote do
+                quote generated: true  do
                   case conn.params do
                     %{"key" => key, "value" => value} ->
                       apply(unquote(module), :plato_put, [key, value])
@@ -236,7 +237,7 @@ defmodule Camarero do
               param = Macro.var(:param, nil)
 
               delete_param_block =
-                quote do
+                quote generated: true do
                   # * TODO Maybe avoid get before delete? Parameterize?
                   case apply(unquote(module), :plato_get, [unquote(param)]) do
                     :error ->
@@ -280,7 +281,7 @@ defmodule Camarero do
     full_path = Macro.var(:full_path, nil)
 
     catch_all_block =
-      quote do
+      quote generated: true do
         [param | path] = Enum.reverse(unquote(full_path))
         path = path |> Enum.reverse() |> Enum.join("/")
 
@@ -307,7 +308,7 @@ defmodule Camarero do
     catch_dynamic = handler_wrapper(:get, Enum.join([root, "*full_path"], "/"), catch_all_block)
     catch_all = handler_wrapper(:get, "/*full_path", catch_all_block)
 
-    quote location: :keep do
+    quote generated: true, location: :keep do
       @moduledoc false
 
       require Logger
@@ -352,7 +353,7 @@ defmodule Camarero do
   end
 
   defp endpoint_ast(handler) do
-    quote do
+    quote generated: true do
       @moduledoc false
 
       use Plug.Builder
