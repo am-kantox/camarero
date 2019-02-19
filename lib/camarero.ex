@@ -24,21 +24,23 @@ defmodule Camarero do
       |> Enum.filter(&(&1 in @allowed_methods))
 
     [
-      quote(generated: true, do: @compile {:autoload, true}),
+      quote(generated: true, do: @compile({:autoload, true})),
       quote(generated: true, do: @after_compile({Camarero, :handler!})),
       quote(
-        generated: true, location: :keep,
+        generated: true,
+        location: :keep,
         do:
           @handler_fq_name(
             Keyword.get(
               unquote(opts),
               :as,
-              Module.concat(__MODULE__ |> Module.split() |> hd(), "Camarero")
+              Module.concat([__MODULE__, "Camarero"])
             )
           )
       ),
       quote(
-        generated: true, location: :keep,
+        generated: true,
+        location: :keep,
         do:
           defstruct(
             handler_fq_name: @handler_fq_name,
@@ -51,13 +53,15 @@ defmodule Camarero do
       case scaffold do
         :full ->
           quote(
-            generated: true, location: :keep,
+            generated: true,
+            location: :keep,
             do: use(Camarero.Plato, into: unquote(into))
           )
 
         :access ->
           quote(
-            generated: true, location: :keep,
+            generated: true,
+            location: :keep,
             do: use(Camarero.Tapas, into: unquote(into))
           )
 
@@ -102,7 +106,11 @@ defmodule Camarero do
     rescue
       CompileError ->
         waiting = round(:rand.uniform() * 100)
-        Logger.debug("Deferring creation of #{env.module} for #{waiting} ms")
+
+        Logger.debug(fn ->
+          "Deferring creation of #{env.module} for #{waiting} ms"
+        end)
+
         Process.sleep(waiting)
         rehandler!(handler_name, endpoint_name, env)
     end
@@ -191,7 +199,9 @@ defmodule Camarero do
               get_all = handler_wrapper(:get, endpoint, get_all_block)
 
               param = Macro.var(:param, nil)
-              get_param_block = quote(generated: true, do: response!(conn, unquote(module), unquote(param)))
+
+              get_param_block =
+                quote(generated: true, do: response!(conn, unquote(module), unquote(param)))
 
               get_param =
                 handler_wrapper(:get, Enum.join([endpoint, ":param"], "/"), get_param_block)
@@ -204,7 +214,7 @@ defmodule Camarero do
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :post)) do
               post_block =
-                quote generated: true  do
+                quote generated: true do
                   case conn.params do
                     %{"key" => key, "value" => value} ->
                       apply(unquote(module), :plato_put, [key, value])

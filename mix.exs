@@ -3,7 +3,7 @@ defmodule Camarero.MixProject do
 
   @app :camarero
   @app_name "camarero"
-  @version "0.4.1"
+  @version "0.4.2"
 
   def project do
     [
@@ -41,6 +41,7 @@ defmodule Camarero.MixProject do
       {:jason, "~> 1.0"},
       {:iteraptor, "~> 1.0", only: :test},
       {:stream_data, "~> 0.4", only: :test},
+      {:credo, "~> 1.0", only: :dev},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
