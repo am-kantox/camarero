@@ -168,6 +168,14 @@ defmodule Camarero do
         Application.get_env(:camarero, :carta, [])
       end
 
+    send_resp_block =
+      quote generated: true do
+        defp send_resp_and_envio(conn, status, what) do
+          Camarero.Spitter.spit(:all, %{conn: conn, status: status, what: what})
+          send_resp(conn, status, what)
+        end
+      end
+
     {routes, ast} =
       items
       |> Enum.filter(&Code.ensure_compiled?/1)
@@ -183,7 +191,7 @@ defmodule Camarero do
                 quote generated: true do
                   values = apply(unquote(module), :plato_all, [])
 
-                  send_resp(
+                  send_resp_and_envio(
                     conn,
                     200,
                     Jason.encode!(
@@ -218,10 +226,10 @@ defmodule Camarero do
                   case conn.params do
                     %{"key" => key, "value" => value} ->
                       apply(unquote(module), :plato_put, [key, value])
-                      send_resp(conn, 200, "")
+                      send_resp_and_envio(conn, 200, "")
 
                     payload ->
-                      send_resp(
+                      send_resp_and_envio(
                         conn,
                         412,
                         Jason.encode!(
@@ -251,7 +259,7 @@ defmodule Camarero do
                   # * TODO Maybe avoid get before delete? Parameterize?
                   case apply(unquote(module), :plato_get, [unquote(param)]) do
                     :error ->
-                      send_resp(
+                      send_resp_and_envio(
                         conn,
                         412,
                         Jason.encode!(%{
@@ -262,10 +270,15 @@ defmodule Camarero do
 
                     {:ok, value} ->
                       apply(unquote(module), :plato_delete, [unquote(param)])
-                      send_resp(conn, 200, Jason.encode!(%{key: unquote(param), value: value}))
+
+                      send_resp_and_envio(
+                        conn,
+                        200,
+                        Jason.encode!(%{key: unquote(param), value: value})
+                      )
 
                     other ->
-                      send_resp(
+                      send_resp_and_envio(
                         conn,
                         503,
                         Jason.encode!(%{
@@ -297,7 +310,7 @@ defmodule Camarero do
 
         with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
              {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
-          send_resp(
+          send_resp_and_envio(
             conn,
             400,
             Jason.encode!(%{
@@ -320,10 +333,10 @@ defmodule Camarero do
 
     quote generated: true, location: :keep do
       @moduledoc false
-
       require Logger
 
       use Plug.Router
+
       plug(:match)
 
       @root unquote(root)
@@ -351,11 +364,12 @@ defmodule Camarero do
               response
           end
 
-        send_resp(conn, status, Jason.encode!(response))
+        send_resp_and_envio(conn, status, Jason.encode!(response))
       end
 
       def routes, do: unquote(Macro.escape(routes))
 
+      unquote(send_resp_block)
       unquote_splicing(Enum.reverse([catch_all, catch_dynamic | ast]))
 
       plug(:dispatch)

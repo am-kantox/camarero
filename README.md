@@ -78,7 +78,11 @@ end
 
 ## Changelog
 
-### `0.4.0`
+### `0.5`
+
+- Ability to subscribe to incoming requests with `Envío.Subscriber` (see `test/envio_test.exs` for inspiration.)
+
+### `0.4`
 
 - basic CRUD (`GET /`, `GET /:id`, `POST /`, `DELETE /:id`),
 - better support for many handlers,
