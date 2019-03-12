@@ -138,7 +138,7 @@ defmodule Camarero do
 
     quote generated: true do
       defp(
-        do_match(unquote(conn), unquote(method), unquote(match), unquote(host))
+        do_match(unquote(conn), unquote(method), unquote(match), _)
         when unquote(guards)
       ) do
         unquote(private)
@@ -329,7 +329,7 @@ defmodule Camarero do
       end
 
     catch_dynamic = handler_wrapper(:get, Enum.join([root, "*full_path"], "/"), catch_all_block)
-    catch_all = handler_wrapper(:get, "/*full_path", catch_all_block)
+    catch_all = Enum.map(@allowed_methods, &handler_wrapper(&1, "/*full_path", catch_all_block))
 
     quote generated: true, location: :keep do
       @moduledoc false
@@ -370,7 +370,7 @@ defmodule Camarero do
       def routes, do: unquote(Macro.escape(routes))
 
       unquote(send_resp_block)
-      unquote_splicing(Enum.reverse([catch_all, catch_dynamic | ast]))
+      unquote_splicing(Enum.reverse(catch_all ++ [catch_dynamic | ast]))
 
       plug(:dispatch)
     end
