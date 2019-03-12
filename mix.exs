@@ -3,7 +3,7 @@ defmodule Camarero.MixProject do
 
   @app :camarero
   @app_name "camarero"
-  @version "0.5.0"
+  @version "0.6.0"
 
   def project do
     [
@@ -23,7 +23,7 @@ defmodule Camarero.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :cowboy, :ranch, :ssl, :envio],
+      extra_applications: [:logger, :envio],
       mod: {Camarero.Application, []}
     ]
   end
@@ -36,7 +36,6 @@ defmodule Camarero.MixProject do
   defp deps do
     [
       {:plug, "~> 1.7.2"},
-      {:cowboy, "~> 2.0"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
       {:envio, "~> 0.4.6"},
