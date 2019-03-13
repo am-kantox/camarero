@@ -134,7 +134,7 @@ defmodule Camarero do
   defp handler_wrapper(method, endpoint, block) when method in @allowed_methods do
     path = endpoint
     route = Plug.Router.__route__(method, path, true, [])
-    {conn, method, match, params, host, guards, private, assigns} = route
+    {conn, method, match, params, _host, guards, private, assigns} = route
 
     quote generated: true do
       defp(

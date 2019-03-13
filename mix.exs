@@ -3,7 +3,7 @@ defmodule Camarero.MixProject do
 
   @app :camarero
   @app_name "camarero"
-  @version "0.6.1"
+  @version "0.6.2"
 
   def project do
     [
@@ -66,7 +66,7 @@ defmodule Camarero.MixProject do
 
   defp docs() do
     [
-      # main: @app_name,
+      main: @app_name,
       source_ref: "v#{@version}",
       canonical: "http://hexdocs.pm/#{@app}",
       logo: "stuff/logo-48.png",
