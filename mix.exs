@@ -35,10 +35,10 @@ defmodule Camarero.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:plug, "~> 1.7.2"},
+      {:plug, "~> 1.8"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
-      {:envio, "~> 0.4.6"},
+      {:envio, "~> 0.4"},
       {:stream_data, "~> 0.4", only: :test},
       {:credo, "~> 1.0", only: :dev},
       {:ex_doc, ">= 0.0.0", only: :dev}

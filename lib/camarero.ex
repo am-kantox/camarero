@@ -175,7 +175,10 @@ defmodule Camarero do
       quote generated: true do
         defp send_resp_and_envio(conn, status, what) do
           Camarero.Spitter.spit(:all, %{conn: conn, status: status, what: what})
-          send_resp(conn, status, what)
+
+          conn
+          |> put_resp_content_type("application/json")
+          |> send_resp(status, what)
         end
       end
 
