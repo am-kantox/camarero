@@ -11,15 +11,13 @@ defmodule CamareroEnvioTest do
       EnvioSucker.terminate(:normal, Envio.Channels.state())
     end)
 
-    %{pid: pid}
+    %{pid: pid, opts: Camarero.Handler.init([])}
   end
 
-  @opts Camarero.Handler.init([])
-
-  test "gets the processed messages" do
+  test "gets the processed messages", ctx do
     :get
     |> conn("/foo")
-    |> Camarero.Handler.call(@opts)
+    |> Camarero.Handler.call(ctx.opts)
 
     Process.sleep(1_000)
   end

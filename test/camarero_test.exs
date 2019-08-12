@@ -4,13 +4,15 @@ defmodule CamareroTest do
 
   doctest Camarero
 
-  @opts Camarero.Handler.init([])
+  setup_all do
+    %{opts: Camarero.Handler.init([])}
+  end
 
-  test "responds with 400 on completely wrong path" do
+  test "responds with 400 on completely wrong path", ctx do
     conn = conn(:get, "/foo")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the response and status
     assert conn.state == :sent
@@ -18,11 +20,11 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|error path|
   end
 
-  test "responds with 404 on missing key" do
+  test "responds with 404 on missing key", ctx do
     conn = conn(:get, "/api/v1/heartbeat/foo")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the response and status
     assert conn.state == :sent
@@ -30,13 +32,13 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|error key|
   end
 
-  test "responds with 200 on existing key" do
+  test "responds with 200 on existing key", ctx do
     Camarero.Carta.Heartbeat.plato_put("existing", 42)
 
     conn = conn(:get, "/api/v1/heartbeat/existing")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the response and status
     assert conn.state == :sent
@@ -45,13 +47,13 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") == 42
   end
 
-  test "responds with 200 on the whole resource" do
+  test "responds with 200 on the whole resource", ctx do
     Camarero.Carta.Heartbeat.plato_put("foo1", 42)
 
     conn = conn(:get, "/api/v1/heartbeat")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the response and status
     assert conn.state == :sent
@@ -60,14 +62,14 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") |> Map.get("foo1") == 42
   end
 
-  test "allow plain responses via config" do
+  test "allow plain responses via config", ctx do
     Camarero.Catering.route!(Camarero.Carta.PlainResponse)
     Camarero.Carta.PlainResponse.plato_put("plain", 42)
 
     conn = conn(:get, "/api/v1/plain_response/plain")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the response and status
     assert conn.state == :sent
@@ -75,14 +77,14 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() == 42
   end
 
-  test "allows dynamic routes" do
+  test "allows dynamic routes", ctx do
     Camarero.Catering.route!(Camarero.Carta.DynamicHeartbeat)
     Camarero.Carta.DynamicHeartbeat.plato_put("existing", 42)
 
     conn = conn(:get, "/api/v1/dynamic_heartbeat/existing")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the route added
     assert Camarero.Catering.Routes.state()["dynamic_heartbeat"] ==
@@ -95,14 +97,14 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") == 42
   end
 
-  test "allows deletion" do
+  test "allows deletion", ctx do
     Camarero.Carta.DynamicHeartbeat.plato_put("temporary", 42)
     Camarero.Carta.DynamicHeartbeat.plato_delete("temporary")
 
     conn = conn(:get, "/api/v1/heartbeat/temporary")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the response and status
     assert conn.state == :sent
@@ -110,13 +112,13 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|error key|
   end
 
-  test "supports URL-encoded keys" do
+  test "supports URL-encoded keys", ctx do
     Camarero.Carta.Heartbeat.plato_put("USD/EUR", 42)
 
     conn = conn(:get, "/api/v1/heartbeat/USD%2FEUR")
 
     # Invoke the plug
-    conn = Camarero.Handler.call(conn, @opts)
+    conn = Camarero.Handler.call(conn, ctx.opts)
 
     # Assert the response and status
     assert conn.state == :sent
@@ -124,11 +126,11 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
   end
 
-  test "supports all CRUD methods" do
+  test "supports all CRUD methods", ctx do
     conn =
       :post
       |> conn("/api/v1/crud", %{key: "foo", value: 42})
-      |> Camarero.Handler.call(@opts)
+      |> Camarero.Handler.call(ctx.opts)
 
     assert conn.status == 200
 
@@ -136,7 +138,7 @@ defmodule CamareroTest do
       Enum.map(~w|get delete get delete|a, fn method ->
         method
         |> conn("/api/v1/crud/foo")
-        |> Camarero.Handler.call(@opts)
+        |> Camarero.Handler.call(ctx.opts)
       end)
 
     # Assert the response and status
@@ -149,7 +151,7 @@ defmodule CamareroTest do
     # assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
   end
 
-  test "overriding of existing route is disallowed" do
+  test "overriding of existing route is disallowed", ctx do
     Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
     assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat
 

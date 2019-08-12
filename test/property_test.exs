@@ -5,7 +5,9 @@ defmodule Camarero.Property.Test do
 
   import StreamData
 
-  @opts Camarero.Handler.init([])
+  setup_all do
+    %{opts: Camarero.Handler.init([])}
+  end
 
   defmacrop aib, do: quote(do: one_of([atom(:alphanumeric), integer()]))
   defmacrop key, do: quote(do: atom(:alphanumeric))
@@ -19,8 +21,8 @@ defmodule Camarero.Property.Test do
 
   defmacrop key_value, do: quote(do: map_of(key(), leaf()))
 
-  test "responds with 200 on existing key" do
-    check all term <- key_value(), max_runs: 25 do
+  test "responds with 200 on existing key", ctx do
+    check all(term <- key_value(), max_runs: 25) do
       Enum.each(term, fn {k, v} ->
         # do not check empties
         k = "foo_#{Atom.to_string(k)}"
@@ -30,7 +32,7 @@ defmodule Camarero.Property.Test do
         conn = conn(:get, "/api/v1/heartbeat/#{k}")
 
         # Invoke the plug
-        conn = Camarero.Handler.call(conn, @opts)
+        conn = Camarero.Handler.call(conn, ctx.opts)
 
         # Assert the response and status
         assert conn.state == :sent

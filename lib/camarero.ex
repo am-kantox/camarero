@@ -101,14 +101,17 @@ defmodule Camarero do
       handler_ast = handler_ast()
       remodule!(handler_name, handler_ast, env)
 
+      unless Code.ensure_compiled?(handler_name),
+        do: raise(CompileError, message: "Generator conflict")
+
       endpoint_ast = endpoint_ast(handler_name)
       remodule!(endpoint_name, endpoint_ast, env)
     rescue
-      CompileError ->
+      err in [CompileError, UndefinedFunctionError] ->
         waiting = round(:rand.uniform() * 100)
 
         Logger.debug(fn ->
-          "Deferring creation of #{env.module} for #{waiting} ms"
+          "Deferring creation of #{env.module} for #{waiting} ms (#{inspect(err)})"
         end)
 
         Process.sleep(waiting)
