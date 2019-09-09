@@ -62,6 +62,21 @@ defmodule CamareroTest do
     assert conn.resp_body |> Jason.decode!() |> Map.get("value") |> Map.get("foo1") == 42
   end
 
+  # test "allow Keyword as plato", ctx do
+  #   Camarero.Catering.route!(Camarero.Carta.IntoKw)
+  #   Camarero.Carta.IntoKw.plato_put("plain", 42)
+
+  #   conn = conn(:get, "/api/v1/into_kw/plain")
+
+  #   # Invoke the plug
+  #   conn = Camarero.Handler.call(conn, ctx.opts)
+
+  #   # Assert the response and status
+  #   assert conn.state == :sent
+  #   assert conn.status == 200
+  #   assert conn.resp_body |> Jason.decode!() == 42
+  # end
+
   test "allow plain responses via config", ctx do
     Camarero.Catering.route!(Camarero.Carta.PlainResponse)
     Camarero.Carta.PlainResponse.plato_put("plain", 42)
@@ -148,10 +163,29 @@ defmodule CamareroTest do
     assert get_ko.status == 404
     assert Enum.all?(ok, &(&1.status == 200))
 
-    # assert conn.resp_body |> Jason.decode!() |> Map.keys() == ~w|key value|
+    conn =
+      :put
+      |> conn("/api/v1/crud/foo", %{value: 42})
+      |> Camarero.Handler.call(ctx.opts)
+
+    assert conn.status == 200
+
+    conns =
+      Enum.map(~w|get delete get delete|a, fn method ->
+        method
+        |> conn("/api/v1/crud/foo")
+        |> Camarero.Handler.call(ctx.opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 412
+    assert get_ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
   end
 
-  test "overriding of existing route is disallowed", ctx do
+  test "overriding of existing route is disallowed", _ctx do
     Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
     assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat
 

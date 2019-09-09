@@ -4,7 +4,7 @@ defmodule Camarero do
   require Plug.Router
   require Logger
 
-  @allowed_methods ~w|get post delete|a
+  @allowed_methods ~w|get post put delete|a
 
   defmacro __using__(opts \\ []) do
     env = __CALLER__
@@ -84,6 +84,7 @@ defmodule Camarero do
     Code.compiler_options(ignore_module_conflict: true)
     rehandler!(handler_name, endpoint_name, env)
     Code.compiler_options(ignore_module_conflict: false)
+
     #! </UGLY HACK>
 
     {handler_name, endpoint_name}
@@ -252,6 +253,37 @@ defmodule Camarero do
               post_all = handler_wrapper(:post, endpoint, post_block)
 
               {[{:post, endpoint, module} | routes], [post_all | ast]}
+            else
+              {routes, ast}
+            end
+
+          {routes, ast} =
+            if Enum.find(struct(module).methods, &(&1 == :put)) do
+              put_block =
+                quote generated: true do
+                  case conn.params do
+                    %{"param" => key, "value" => value} ->
+                      apply(unquote(module), :plato_put, [key, value])
+                      send_resp_and_envio(conn, 200, "")
+
+                    payload ->
+                      send_resp_and_envio(
+                        conn,
+                        412,
+                        Jason.encode!(
+                          %{
+                            errors: ["JSON object with “value” key is required"],
+                            payload: payload
+                          },
+                          []
+                        )
+                      )
+                  end
+                end
+
+              put_param = handler_wrapper(:put, Enum.join([endpoint, ":param"], "/"), put_block)
+
+              {[{:put, endpoint, module} | routes], [put_param | ast]}
             else
               {routes, ast}
             end

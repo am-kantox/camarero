@@ -5,5 +5,5 @@ end
 
 defmodule Camarero.Carta.Crud do
   @moduledoc false
-  use Camarero, as: Camarero, methods: ~w|post get delete|a
+  use Camarero, as: Camarero, methods: ~w|post put get delete|a
 end
