@@ -1,4 +1,5 @@
 defmodule EnvioSucker do
+  @moduledoc false
   use Envio.Subscriber, channels: [{Camarero.Spitter, :all}]
 
   def handle_envio(message, state) do

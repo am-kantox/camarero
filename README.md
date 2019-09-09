@@ -78,6 +78,10 @@ end
 
 ## Changelog
 
+### `0.7`
+
+- Added support for `HTTP PUT` method
+
 ### `0.5`
 
 - Ability to subscribe to incoming requests with `Envío.Subscriber` (see `test/envio_test.exs` for inspiration.)

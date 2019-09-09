@@ -1,5 +1,5 @@
 defmodule Camarero do
-  @moduledoc false
+  @moduledoc "README.md" |> File.read!() |> String.split("\n") |> Enum.drop(2) |> Enum.join("\n")
 
   require Plug.Router
   require Logger
@@ -72,6 +72,7 @@ defmodule Camarero do
   end
 
   # idea by Dave Thomas https://twitter.com/pragdave/status/1077775018942185472
+  @doc false
   @spec handler!(env :: nil | %Macro.Env{}, _bytecode :: binary()) :: {atom(), atom()}
   def handler!(env, _bytecode) do
     fq_name = struct(env.module).handler_fq_name
