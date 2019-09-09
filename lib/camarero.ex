@@ -197,11 +197,15 @@ defmodule Camarero do
             if Enum.find(struct(module).methods, &(&1 == :get)) do
               get_all_block =
                 quote generated: true do
-                  values = apply(unquote(module), :plato_all, [])
+                  {values, status} =
+                    case apply(unquote(module), :plato_all, []) do
+                      {values, status} -> {values, status}
+                      values -> {values, 200}
+                    end
 
                   send_resp_and_envio(
                     conn,
-                    200,
+                    status,
                     Jason.encode!(
                       case struct(unquote(module)).response_as do
                         :value -> values
@@ -233,8 +237,14 @@ defmodule Camarero do
                 quote generated: true do
                   case conn.params do
                     %{"key" => key, "value" => value} ->
-                      apply(unquote(module), :plato_put, [key, value])
-                      send_resp_and_envio(conn, 200, "")
+                      {value, status} =
+                        case apply(unquote(module), :plato_put, [key, value]) do
+                          {value, status} -> {value, status}
+                          :ok -> {"", 200}
+                          value -> {value, 200}
+                        end
+
+                      send_resp_and_envio(conn, status, value)
 
                     payload ->
                       send_resp_and_envio(
@@ -264,8 +274,14 @@ defmodule Camarero do
                 quote generated: true do
                   case conn.params do
                     %{"param" => key, "value" => value} ->
-                      apply(unquote(module), :plato_put, [key, value])
-                      send_resp_and_envio(conn, 200, "")
+                      {value, status} =
+                        case apply(unquote(module), :plato_put, [key, value]) do
+                          {value, status} -> {value, status}
+                          :ok -> {"", 200}
+                          value -> {value, 200}
+                        end
+
+                      send_resp_and_envio(conn, status, value)
 
                     payload ->
                       send_resp_and_envio(
@@ -291,29 +307,21 @@ defmodule Camarero do
 
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :delete)) do
-              param = Macro.var(:param, nil)
-
               delete_param_block =
                 quote generated: true do
-                  # * TODO Maybe avoid get before delete? Parameterize?
-                  case apply(unquote(module), :plato_get, [unquote(param)]) do
-                    :error ->
-                      send_resp_and_envio(
-                        conn,
-                        412,
-                        Jason.encode!(%{
-                          errors: ["Inexisting key [#{unquote(param)}]"],
-                          payload: conn.params
-                        })
-                      )
-
-                    {:ok, value} ->
-                      apply(unquote(module), :plato_delete, [unquote(param)])
+                  case conn.params do
+                    %{"param" => key} ->
+                      {value, status} =
+                        case apply(unquote(module), :plato_delete, [key]) do
+                          {value, status} -> {value, status}
+                          nil -> {:not_found, 404}
+                          value -> {value, 200}
+                        end
 
                       send_resp_and_envio(
                         conn,
-                        200,
-                        Jason.encode!(%{key: unquote(param), value: value})
+                        status,
+                        Jason.encode!(%{key: key, value: value})
                       )
 
                     other ->

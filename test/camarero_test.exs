@@ -113,6 +113,7 @@ defmodule CamareroTest do
   end
 
   test "allows deletion", ctx do
+    Camarero.Catering.route!(Camarero.Carta.DynamicHeartbeat)
     Camarero.Carta.DynamicHeartbeat.plato_put("temporary", 42)
     Camarero.Carta.DynamicHeartbeat.plato_delete("temporary")
 
@@ -159,7 +160,7 @@ defmodule CamareroTest do
     # Assert the response and status
     assert Enum.all?(conns, &(&1.state == :sent))
     [delete_ko, get_ko | ok] = Enum.reverse(conns)
-    assert delete_ko.status == 412
+    assert delete_ko.status == 404
     assert get_ko.status == 404
     assert Enum.all?(ok, &(&1.status == 200))
 
@@ -180,7 +181,7 @@ defmodule CamareroTest do
     # Assert the response and status
     assert Enum.all?(conns, &(&1.state == :sent))
     [delete_ko, get_ko | ok] = Enum.reverse(conns)
-    assert delete_ko.status == 412
+    assert delete_ko.status == 404
     assert get_ko.status == 404
     assert Enum.all?(ok, &(&1.status == 200))
   end

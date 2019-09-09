@@ -17,7 +17,7 @@ defmodule Camarero.Plato do
   @doc "Sets the value for the key specified (intended to be used from the application)"
   @callback plato_put(key :: binary() | atom(), value :: any()) :: :ok
   @doc "Deletes the key-value pair for the key specified"
-  @callback plato_delete(key :: binary() | atom()) :: :ok
+  @callback plato_delete(key :: binary() | atom()) :: {:ok, any()}
   @doc "Returns the route this module is supposed to be mounted to"
   @callback plato_route() :: binary()
 
@@ -61,7 +61,7 @@ defmodule Camarero.Plato do
 
       @impl true
       def plato_delete(key) when is_binary(key),
-        do: GenServer.cast(__MODULE__, {:plato_delete, key})
+        do: GenServer.call(__MODULE__, {:plato_delete, key})
 
       @impl true
       def plato_route() do
@@ -108,9 +108,9 @@ defmodule Camarero.Plato do
       end
 
       @impl true
-      def handle_cast({:plato_delete, key}, state) do
-        {_, result} = tapas_delete(state, key)
-        {:noreply, result}
+      def handle_call({:plato_delete, key}, _from, state) do
+        {value, result} = tapas_delete(state, key)
+        {:reply, value, result}
       end
 
       defoverridable Camarero.Plato
