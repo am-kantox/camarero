@@ -3,7 +3,7 @@ defmodule Camarero.MixProject do
 
   @app :camarero
   @app_name "camarero"
-  @version "0.9.1"
+  @version "0.10.0"
 
   def project do
     [
@@ -24,7 +24,6 @@ defmodule Camarero.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      included_applications: [:cowboy, :envio],
       mod: {Camarero.Application, []}
     ]
   end
@@ -39,7 +38,8 @@ defmodule Camarero.MixProject do
       {:plug, "~> 1.8"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
-      {:envio, "~> 0.4"},
+      {:cowboy, "~> 2.0", optional: true},
+      {:envio, "~> 0.4", optional: true},
       {:stream_data, "~> 0.4", only: :test},
       {:credo, "~> 1.0", only: :dev},
       {:ex_doc, ">= 0.0.0", only: :dev}
