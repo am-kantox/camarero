@@ -7,6 +7,7 @@ defmodule Camarero.Application do
   @default_scheme :http
 
   def start(_type, _args) do
+    Application.ensure_all_started(:envio)
     Application.ensure_all_started(:cowboy)
 
     catering = Application.get_env(:camarero, :catering, [])
