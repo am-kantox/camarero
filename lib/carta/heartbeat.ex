@@ -4,5 +4,6 @@ defmodule Camarero.Carta.Heartbeat do
     at `"/api/v1/heartbeat"` endpoint.
   """
 
-  use Camarero, as: Camarero
+  # , as: Camarero
+  use Camarero
 end

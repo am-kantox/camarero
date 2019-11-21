@@ -92,13 +92,6 @@ defmodule Camarero do
   end
 
   defp rehandler!(handler_name, endpoint_name, env) do
-    endpoints =
-      [endpoint_name | Application.get_env(:camarero, :endpoints, [])]
-      |> MapSet.new()
-      |> MapSet.to_list()
-
-    Application.put_env(:camarero, :endpoints, endpoints, persistent: true)
-
     try do
       handler_ast = handler_ast()
       remodule!(handler_name, handler_ast, env)
@@ -108,12 +101,18 @@ defmodule Camarero do
 
       endpoint_ast = endpoint_ast(handler_name)
       remodule!(endpoint_name, endpoint_ast, env)
+
+      Logger.info("[🕷️] handler and endpoint created successfully",
+        handler: handler_name,
+        endpoint: endpoint_name
+      )
     rescue
       err in [CompileError, UndefinedFunctionError] ->
         waiting = round(:rand.uniform() * 100)
 
         Logger.debug(fn ->
-          "Deferring creation of #{env.module} for #{waiting} ms (#{inspect(err)})"
+          "Deferring creation of #{env.module} for #{waiting} ms (#{inspect(err)})" <>
+            inspect(__STACKTRACE__)
         end)
 
         Process.sleep(waiting)

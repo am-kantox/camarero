@@ -16,14 +16,26 @@ defmodule Camarero.MixProject do
       xref: [exclude: []],
       description: description(),
       deps: deps(),
-      docs: docs()
+      docs: docs(),
+      releases: [
+        camarero: [
+          include_executables_for: [:unix],
+          applications: [
+            sasl: :permanent,
+            logger: :permanent,
+            envio: :permanent,
+            runtime_tools: :permanent,
+            observer_cli: :permanent
+          ]
+        ]
+      ]
     ]
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:envio, :cowboy, :logger],
       mod: {Camarero.Application, []}
     ]
   end
@@ -38,9 +50,10 @@ defmodule Camarero.MixProject do
       {:plug, "~> 1.8"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
-      {:cowboy, "~> 2.0", optional: true},
-      {:envio, "~> 0.4", optional: true},
+      {:envio, "~> 0.4"},
+      {:cowboy, "~> 2.0", runtime: false},
       {:stream_data, "~> 0.4", only: :test},
+      {:observer_cli, "~> 1.5", only: [:dev, :test]},
       {:credo, "~> 1.0", only: :dev},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
