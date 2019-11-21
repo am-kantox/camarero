@@ -35,7 +35,7 @@ defmodule Camarero.Tapas do
       @behaviour Camarero.Tapas
 
       @impl true
-      def tapas_into(), do: unquote(into)
+      def tapas_into, do: unquote(into)
 
       @impl true
       def tapas_get(bag, key) when is_atom(key), do: tapas_get(bag, to_string(key))

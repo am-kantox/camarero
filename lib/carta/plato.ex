@@ -37,7 +37,7 @@ defmodule Camarero.Plato do
       @behaviour Camarero.Plato
 
       @impl true
-      def plato_all(), do: GenServer.call(__MODULE__, :plato_all)
+      def plato_all, do: GenServer.call(__MODULE__, :plato_all)
 
       @impl true
       def plato_get(key) when is_atom(key),
@@ -64,7 +64,7 @@ defmodule Camarero.Plato do
         do: GenServer.call(__MODULE__, {:plato_delete, key})
 
       @impl true
-      def plato_route() do
+      def plato_route do
         __MODULE__
         |> Macro.underscore()
         |> String.split("/")
@@ -75,7 +75,7 @@ defmodule Camarero.Plato do
       @doc ~s"""
       Starts the `#{__MODULE__}` linked to the current process.
       """
-      @spec start_link(into :: Keyword.t(), opts :: Keyword.t()) ::
+      @spec start_link(into :: Enum.t(), opts :: Keyword.t()) ::
               {:ok, pid()} | {:error, {:already_started, pid()} | term()}
       def start_link(into \\ [], opts \\ unquote(opts))
 

@@ -10,7 +10,7 @@ defmodule Camarero.Carta.DuplicateHeartbeat do
   use Camarero, as: Camarero
 
   @impl true
-  def plato_route(), do: "heartbeat"
+  def plato_route, do: "heartbeat"
 end
 
 ExUnit.start()

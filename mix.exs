@@ -16,14 +16,19 @@ defmodule Camarero.MixProject do
       xref: [exclude: []],
       description: description(),
       deps: deps(),
+      aliases: aliases(),
       docs: docs(),
+      dialyzer: [
+        plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
+        plt_add_apps: [:envio],
+        ignore_warnings: ".dialyzer/ignore.exs"
+      ],
       releases: [
         camarero: [
           include_executables_for: [:unix],
           applications: [
             sasl: :permanent,
             logger: :permanent,
-            envio: :permanent,
             cowboy: :permanent,
             runtime_tools: :permanent,
             observer_cli: :permanent
@@ -51,12 +56,24 @@ defmodule Camarero.MixProject do
       {:plug, "~> 1.8"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
-      {:envio, "~> 0.4"},
+      {:envio, "~> 0.4", optional: true},
       {:cowboy, "~> 2.0"},
       {:stream_data, "~> 0.4", only: :test},
       {:observer_cli, "~> 1.5", only: [:dev, :test]},
-      {:credo, "~> 1.0", only: :dev},
+      {:credo, "~> 1.0", only: [:dev, :ci]},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :ci], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev}
+    ]
+  end
+
+  defp aliases do
+    [
+      quality: ["format", "credo --strict", "dialyzer"],
+      "quality.ci": [
+        "format --check-formatted",
+        "credo --strict",
+        "dialyzer --halt-exit-status"
+      ]
     ]
   end
 
@@ -79,7 +96,7 @@ defmodule Camarero.MixProject do
     ]
   end
 
-  defp docs() do
+  defp docs do
     [
       main: @app_name,
       source_ref: "v#{@version}",

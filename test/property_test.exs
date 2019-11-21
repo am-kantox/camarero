@@ -1,12 +1,14 @@
-defmodule Camarero.Property.Test do
+defmodule Property.Test do
   use ExUnit.Case, async: true
   use Plug.Test
   use ExUnitProperties
 
   import StreamData
 
+  alias Camarero.{Carta.Heartbeat, Handler}
+
   setup_all do
-    %{opts: Camarero.Handler.init([])}
+    %{opts: Handler.init([])}
   end
 
   defmacrop aib, do: quote(do: one_of([atom(:alphanumeric), integer()]))
@@ -28,11 +30,11 @@ defmodule Camarero.Property.Test do
         k = "foo_#{Atom.to_string(k)}"
         v = Iteraptor.jsonify(v, values: true)
 
-        Camarero.Carta.Heartbeat.plato_put(k, v)
+        Heartbeat.plato_put(k, v)
         conn = conn(:get, "/api/v1/heartbeat/#{k}")
 
         # Invoke the plug
-        conn = Camarero.Handler.call(conn, ctx.opts)
+        conn = Handler.call(conn, ctx.opts)
 
         # Assert the response and status
         assert conn.state == :sent

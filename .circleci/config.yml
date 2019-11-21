@@ -4,7 +4,7 @@ jobs:
   build:
     docker:
       # specify the version here
-      - image: circleci/elixir:1.7
+      - image: circleci/elixir:1.9
 
       # pre-builds: https://circleci.com/docs/2.0/circleci-images/
       # - image: circleci/postgres:9.4

@@ -14,8 +14,8 @@ defmodule Camarero.Catering do
       do: Agent.start_link(fn -> %{} end, name: __MODULE__)
 
     @doc "Returns the whole mapping of routes to handlers"
-    @spec state() :: map()
-    def state(), do: Agent.get(__MODULE__, & &1)
+    @spec state :: map()
+    def state, do: Agent.get(__MODULE__, & &1)
 
     @doc "Retrieves the handler for the route specified"
     @spec get(key :: binary()) :: module()
@@ -43,6 +43,7 @@ defmodule Camarero.Catering do
   """
   use DynamicSupervisor
   require Logger
+  alias Camarero.Catering.Routes
 
   @default_port 4001
   @default_scheme :http
@@ -59,14 +60,14 @@ defmodule Camarero.Catering do
   def start_link(extra_arguments \\ []) do
     with {:ok, pid} <-
            DynamicSupervisor.start_link(__MODULE__, extra_arguments, name: __MODULE__) do
-      DynamicSupervisor.start_child(__MODULE__, Camarero.Catering.Routes)
+      DynamicSupervisor.start_child(__MODULE__, Routes)
 
       routes =
         :camarero
         |> Application.get_env(:carta, [])
         |> Enum.map(&route!/1)
 
-      Camarero.Catering.Routes.put("★", routes)
+      Routes.put("★", routes)
       {:ok, pid}
     end
   end
@@ -90,12 +91,12 @@ defmodule Camarero.Catering do
   Declares and stores the new route. If the route is already set, logs an error
     message to the log and acts as NOOP.
   """
-  @spec route!(runner :: Supervisor.child_spec() | module()) :: State.t()
+  @spec route!(runner :: Supervisor.child_spec() | module()) :: {module(), {module(), module()}, {Plug.Cowboy, keyword()}}
   def route!(runner) when is_atom(runner) do
     route = apply(runner, :plato_route, [])
 
     existing =
-      Camarero.Catering.Routes.state()
+      Routes.state()
       |> Map.to_list()
       |> Enum.find(fn
         {^route, _} -> true
@@ -109,7 +110,7 @@ defmodule Camarero.Catering do
         The requested route [#{route} → #{runner}] was not added.
       """)
     else
-      Camarero.Catering.Routes.put(route, runner)
+      Routes.put(route, runner)
       {handler, endpoint} = Camarero.handler!(struct(runner).__env__, nil)
 
       cowboy =

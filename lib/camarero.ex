@@ -3,6 +3,7 @@ defmodule Camarero do
 
   require Plug.Router
   require Logger
+  alias Camarero.Catering.Routes
 
   @allowed_methods ~w|get post put delete|a
 
@@ -73,7 +74,7 @@ defmodule Camarero do
 
   # idea by Dave Thomas https://twitter.com/pragdave/status/1077775018942185472
   @doc false
-  @spec handler!(env :: nil | %Macro.Env{}, _bytecode :: binary()) :: {atom(), atom()}
+  @spec handler!(env :: nil | Macro.Env.t(), _bytecode :: nil | binary()) :: {atom(), atom()}
   def handler!(env, _bytecode) do
     fq_name = struct(env.module).handler_fq_name
 
@@ -92,32 +93,30 @@ defmodule Camarero do
   end
 
   defp rehandler!(handler_name, endpoint_name, env) do
-    try do
-      handler_ast = handler_ast()
-      remodule!(handler_name, handler_ast, env)
+    handler_ast = handler_ast()
+    remodule!(handler_name, handler_ast, env)
 
-      unless Code.ensure_compiled?(handler_name),
-        do: raise(CompileError, message: "Generator conflict")
+    unless Code.ensure_compiled?(handler_name),
+      do: raise(CompileError, message: "Generator conflict")
 
-      endpoint_ast = endpoint_ast(handler_name)
-      remodule!(endpoint_name, endpoint_ast, env)
+    endpoint_ast = endpoint_ast(handler_name)
+    remodule!(endpoint_name, endpoint_ast, env)
 
-      Logger.info("[🕷️] handler and endpoint created successfully",
-        handler: handler_name,
-        endpoint: endpoint_name
-      )
-    rescue
-      err in [CompileError, UndefinedFunctionError] ->
-        waiting = round(:rand.uniform() * 100)
+    Logger.info("[🕷️] handler and endpoint created successfully",
+      handler: handler_name,
+      endpoint: endpoint_name
+    )
+  rescue
+    err in [CompileError, UndefinedFunctionError] ->
+      waiting = round(:rand.uniform() * 100)
 
-        Logger.debug(fn ->
-          "Deferring creation of #{env.module} for #{waiting} ms (#{inspect(err)})" <>
-            inspect(__STACKTRACE__)
-        end)
+      Logger.debug(fn ->
+        "Deferring creation of #{env.module} for #{waiting} ms (#{inspect(err)})" <>
+          inspect(__STACKTRACE__)
+      end)
 
-        Process.sleep(waiting)
-        rehandler!(handler_name, endpoint_name, env)
-    end
+      Process.sleep(waiting)
+      rehandler!(handler_name, endpoint_name, env)
   end
 
   @spec remodule!(atom(), any(), %Macro.Env{}) :: {:module, module(), binary(), term()}
@@ -161,13 +160,14 @@ defmodule Camarero do
     end
   end
 
+  # credo:disable-for-lines:160
   @spec handler_ast() :: term()
   defp handler_ast() do
     root = ("/" <> (:camarero |> Application.get_env(:root, ""))) |> String.trim("/")
 
     items =
-      if Enum.find(Process.registered(), &(&1 == Camarero.Catering.Routes)) do
-        Map.values(Camarero.Catering.Routes.state())
+      if Enum.find(Process.registered(), &(&1 == Routes)) do
+        Map.values(Routes.state())
       else
         Application.get_env(:camarero, :carta, [])
       end
@@ -355,8 +355,8 @@ defmodule Camarero do
         [param | path] = Enum.reverse(unquote(full_path))
         path = path |> Enum.reverse() |> Enum.join("/")
 
-        with {nil, _} <- {Camarero.Catering.Routes.get(path <> "/" <> param), ""},
-             {nil, _} <- {Camarero.Catering.Routes.get(path), param} do
+        with {nil, _} <- {Routes.get(path <> "/" <> param), ""},
+             {nil, _} <- {Routes.get(path), param} do
           send_resp_and_envio(
             conn,
             400,

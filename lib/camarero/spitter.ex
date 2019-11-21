@@ -8,6 +8,7 @@ if Code.ensure_loaded?(Envio) do
   end
 else
   defmodule Camarero.Spitter do
+    @moduledoc false
     require Logger
 
     def spit(what), do: Logger.info("[📦] " <> inspect(what))
