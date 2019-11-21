@@ -1,4 +1,4 @@
 import Config
 
 config :camarero,
-  carta: [Camarero.Carta.Heartbeat, Camarero.Carta.Crud]
+  carta: [Camarero.Carta.Heartbeat]

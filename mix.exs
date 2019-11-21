@@ -58,7 +58,7 @@ defmodule Camarero.MixProject do
       {:jason, "~> 1.0"},
       {:envio, "~> 0.4"},
       {:cowboy, "~> 2.0"},
-      {:stream_data, "~> 0.4", only: :test},
+      {:stream_data, "~> 0.4", only: [:test, :ci]},
       {:observer_cli, "~> 1.5", only: [:dev, :test]},
       {:credo, "~> 1.0", only: [:dev, :ci]},
       {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :ci], runtime: false},
