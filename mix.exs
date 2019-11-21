@@ -24,6 +24,7 @@ defmodule Camarero.MixProject do
             sasl: :permanent,
             logger: :permanent,
             envio: :permanent,
+            cowboy: :permanent,
             runtime_tools: :permanent,
             observer_cli: :permanent
           ]
@@ -35,13 +36,13 @@ defmodule Camarero.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:envio, :cowboy, :logger],
+      extra_applications: [:logger],
       mod: {Camarero.Application, []}
     ]
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
-  # defp elixirc_paths(:dev), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
@@ -51,7 +52,7 @@ defmodule Camarero.MixProject do
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
       {:envio, "~> 0.4"},
-      {:cowboy, "~> 2.0", runtime: false},
+      {:cowboy, "~> 2.0"},
       {:stream_data, "~> 0.4", only: :test},
       {:observer_cli, "~> 1.5", only: [:dev, :test]},
       {:credo, "~> 1.0", only: :dev},

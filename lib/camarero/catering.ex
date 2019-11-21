@@ -110,12 +110,12 @@ defmodule Camarero.Catering do
       """)
     else
       Camarero.Catering.Routes.put(route, runner)
-      {handler_name, _} = Camarero.handler!(struct(runner).__env__, nil)
+      {handler, endpoint} = Camarero.handler!(struct(runner).__env__, nil)
 
       cowboy =
         :camarero
         |> Application.get_env(:cowboy, [])
-        |> Keyword.put(:plug, handler_name)
+        |> Keyword.put(:plug, endpoint)
         |> Keyword.put_new(:options, [])
         |> update_in([:options, :port], fn
           nil -> @default_port
@@ -123,14 +123,18 @@ defmodule Camarero.Catering do
         end)
         |> Keyword.put_new(:scheme, @default_scheme)
 
-      # Plug.Cowboy.http(handler_name, [], cowboy)
-
       Logger.info("[🕷️] route created successfully",
-        handler: handler_name,
+        handler: handler,
         cowboy: inspect(cowboy)
       )
 
-      {runner, {Plug.Cowboy, cowboy}}
+      DynamicSupervisor.start_child(Camarero.Catering, {runner, []})
+
+      ref = Module.concat(endpoint, String.upcase(to_string(cowboy[:scheme])))
+      if Code.ensure_loaded?(ref), do: Plug.Cowboy.shutdown(ref)
+      Plug.Cowboy.http(cowboy[:plug], [], port: cowboy[:options][:port])
+
+      {runner, {handler, endpoint}, {Plug.Cowboy, cowboy}}
     end
   end
 

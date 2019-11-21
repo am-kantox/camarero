@@ -8,20 +8,6 @@ defmodule Camarero.Application do
     children = [{Camarero.Catering, [catering]}]
 
     opts = [strategy: :one_for_one, name: Camarero.Supervisor]
-
-    with {:ok, pid} <- Supervisor.start_link(children, opts) do
-      for {runner, {Plug.Cowboy, cowboy}} <- Camarero.Catering.Routes.get("★") do
-        IO.inspect(DynamicSupervisor.start_child(Camarero.Catering, {runner, []}), label: "☆☆☆")
-
-        # IO.inspect(DynamicSupervisor.start_child(Camarero.Catering, {Plug.Cowboy, cowboy}),
-        #   label: "★★★"
-        # )
-
-        # cowboy[:port])
-        Plug.Cowboy.http(cowboy[:plug], [], port: 4002)
-      end
-
-      {:ok, pid}
-    end
+    Supervisor.start_link(children, opts)
   end
 end

@@ -2,15 +2,14 @@ import Config
 
 config :camarero,
   carta: [],
-  catering: [
-    strategy: :one_for_one,
-    max_restarts: 3,
-    max_seconds: 5,
-    max_children: :infinity,
-    extra_arguments: []
-  ],
+  # catering: [
+  #   max_restarts: 3,
+  #   max_seconds: 5,
+  #   max_children: :infinity,
+  #   extra_arguments: []
+  # ],
   root: "api/v1",
-  cowboy: [port: 4001, scheme: :http, options: []]
+  cowboy: [scheme: :http, options: [port: 4002]]
 
 config :logger, :console,
   format: "\n$message\n$date $time [$level] $metadata\n",

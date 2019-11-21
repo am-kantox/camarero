@@ -185,6 +185,7 @@ defmodule Camarero do
 
     {routes, ast} =
       items
+      |> Enum.filter(&match?(mod when is_atom(mod), &1))
       |> Enum.filter(&Code.ensure_compiled?/1)
       |> Enum.sort_by(&(&1 |> apply(:plato_route, []) |> String.length()), &<=/2)
       |> Enum.reduce(
