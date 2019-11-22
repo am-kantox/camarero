@@ -34,30 +34,30 @@ defmodule Camarero.Tapas do
     quote do
       @behaviour Camarero.Tapas
 
-      @impl true
+      @impl Camarero.Tapas
       def tapas_into, do: unquote(into)
 
-      @impl true
+      @impl Camarero.Tapas
       def tapas_get(bag, key) when is_atom(key), do: tapas_get(bag, to_string(key))
 
-      @impl true
+      @impl Camarero.Tapas
       def tapas_get(bag, key) when is_binary(key) do
         Access.fetch(bag, if(unquote(uri_decode), do: URI.decode(key), else: key))
       end
 
-      @impl true
+      @impl Camarero.Tapas
       def tapas_put(bag, key, value) when is_atom(key),
         do: tapas_put(bag, to_string(key), value)
 
-      @impl true
+      @impl Camarero.Tapas
       def tapas_put(bag, key, value) when is_binary(key),
         do: Access.get_and_update(bag, key, &{&1, value})
 
-      @impl true
+      @impl Camarero.Tapas
       def tapas_delete(bag, key) when is_atom(key),
         do: tapas_delete(bag, to_string(key))
 
-      @impl true
+      @impl Camarero.Tapas
       def tapas_delete(bag, key) when is_binary(key),
         do: Access.get_and_update(bag, key, fn _ -> :pop end)
 

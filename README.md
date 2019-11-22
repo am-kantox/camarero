@@ -52,7 +52,7 @@ All the methods from both `Camarero.Tapas` and `Camarero.Plato` default implemen
 defmodule Camarero.Carta.Heartbeat do
   use Camarero, into: %MyStructWithAccessBehaviour{}
 
-  @impl true
+  @impl Camarero.Plato
   def plato_route(), do: "internal/heartbeat"
 end
 ```

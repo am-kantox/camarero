@@ -56,7 +56,7 @@ defmodule Camarero.MixProject do
       {:plug, "~> 1.8"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
-      {:envio, "~> 0.4"},
+      {:envio, "~> 0.7"},
       {:cowboy, "~> 2.0"},
       {:stream_data, "~> 0.4", only: [:test, :ci]},
       {:observer_cli, "~> 1.5", only: [:dev, :test]},
