@@ -16,7 +16,25 @@ defmodule Camarero.MixProject do
       xref: [exclude: []],
       description: description(),
       deps: deps(),
-      docs: docs()
+      aliases: aliases(),
+      docs: docs(),
+      dialyzer: [
+        plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
+        plt_add_apps: [:envio],
+        ignore_warnings: ".dialyzer/ignore.exs"
+      ],
+      releases: [
+        camarero: [
+          include_executables_for: [:unix],
+          applications: [
+            sasl: :permanent,
+            logger: :permanent,
+            cowboy: :permanent,
+            runtime_tools: :permanent,
+            observer_cli: :permanent
+          ]
+        ]
+      ]
     ]
   end
 
@@ -29,7 +47,7 @@ defmodule Camarero.MixProject do
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
-  # defp elixirc_paths(:dev), do: ["lib", "test/support"]
+  defp elixirc_paths(:ci), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
@@ -38,11 +56,24 @@ defmodule Camarero.MixProject do
       {:plug, "~> 1.8"},
       {:plug_cowboy, "~> 2.0"},
       {:jason, "~> 1.0"},
-      {:cowboy, "~> 2.0", optional: true},
-      {:envio, "~> 0.4", optional: true},
-      {:stream_data, "~> 0.4", only: :test},
-      {:credo, "~> 1.0", only: :dev},
+      {:envio, "~> 0.7"},
+      {:cowboy, "~> 2.0"},
+      {:stream_data, "~> 0.4", only: [:test, :ci]},
+      {:observer_cli, "~> 1.5", only: [:dev, :test]},
+      {:credo, "~> 1.0", only: [:dev, :ci]},
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :ci], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev}
+    ]
+  end
+
+  defp aliases do
+    [
+      quality: ["format", "credo --strict", "dialyzer"],
+      "quality.ci": [
+        "format --check-formatted",
+        "credo --strict",
+        "dialyzer --halt-exit-status"
+      ]
     ]
   end
 
@@ -65,7 +96,7 @@ defmodule Camarero.MixProject do
     ]
   end
 
-  defp docs() do
+  defp docs do
     [
       main: @app_name,
       source_ref: "v#{@version}",

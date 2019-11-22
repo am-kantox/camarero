@@ -36,35 +36,35 @@ defmodule Camarero.Plato do
 
       @behaviour Camarero.Plato
 
-      @impl true
-      def plato_all(), do: GenServer.call(__MODULE__, :plato_all)
+      @impl Camarero.Plato
+      def plato_all, do: GenServer.call(__MODULE__, :plato_all)
 
-      @impl true
+      @impl Camarero.Plato
       def plato_get(key) when is_atom(key),
         do: key |> to_string() |> plato_get()
 
-      @impl true
+      @impl Camarero.Plato
       def plato_get(key) when is_binary(key),
         do: GenServer.call(__MODULE__, {:plato_get, key})
 
-      @impl true
+      @impl Camarero.Plato
       def plato_put(key, value) when is_atom(key),
         do: key |> to_string() |> plato_put(value)
 
-      @impl true
+      @impl Camarero.Plato
       def plato_put(key, value) when is_binary(key),
         do: GenServer.cast(__MODULE__, {:plato_put, {key, value}})
 
-      @impl true
+      @impl Camarero.Plato
       def plato_delete(key) when is_atom(key),
         do: key |> to_string() |> plato_delete()
 
-      @impl true
+      @impl Camarero.Plato
       def plato_delete(key) when is_binary(key),
         do: GenServer.call(__MODULE__, {:plato_delete, key})
 
-      @impl true
-      def plato_route() do
+      @impl Camarero.Plato
+      def plato_route do
         __MODULE__
         |> Macro.underscore()
         |> String.split("/")
@@ -75,7 +75,7 @@ defmodule Camarero.Plato do
       @doc ~s"""
       Starts the `#{__MODULE__}` linked to the current process.
       """
-      @spec start_link(into :: Keyword.t(), opts :: Keyword.t()) ::
+      @spec start_link(into :: Enum.t(), opts :: Keyword.t()) ::
               {:ok, pid()} | {:error, {:already_started, pid()} | term()}
       def start_link(into \\ [], opts \\ unquote(opts))
 
@@ -89,25 +89,25 @@ defmodule Camarero.Plato do
         )
       end
 
-      @impl true
+      @impl GenServer
       def init(into), do: {:ok, into}
 
-      @impl true
+      @impl GenServer
       def handle_call(:plato_all, _from, state),
         do: {:reply, state, state}
 
-      @impl true
+      @impl GenServer
       def handle_call({:plato_get, key}, _from, state) do
         {:reply, tapas_get(state, key), state}
       end
 
-      @impl true
+      @impl GenServer
       def handle_cast({:plato_put, {key, value}}, state) do
         {_, result} = tapas_put(state, key, value)
         {:noreply, result}
       end
 
-      @impl true
+      @impl GenServer
       def handle_call({:plato_delete, key}, _from, state) do
         {value, result} = tapas_delete(state, key)
         {:reply, value, result}

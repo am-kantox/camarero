@@ -14,8 +14,8 @@ defmodule Camarero.Catering do
       do: Agent.start_link(fn -> %{} end, name: __MODULE__)
 
     @doc "Returns the whole mapping of routes to handlers"
-    @spec state() :: map()
-    def state(), do: Agent.get(__MODULE__, & &1)
+    @spec state :: map()
+    def state, do: Agent.get(__MODULE__, & &1)
 
     @doc "Retrieves the handler for the route specified"
     @spec get(key :: binary()) :: module()
@@ -23,8 +23,8 @@ defmodule Camarero.Catering do
       do: __MODULE__ |> Agent.get(& &1) |> Map.get(key!(key))
 
     @doc "Stores a handler for the route specified"
-    @spec put(key :: binary(), value :: module()) :: :ok
-    def put(key, value) when is_binary(key) and is_atom(value),
+    @spec put(key :: binary(), value :: [tuple()] | module()) :: :ok
+    def put(key, value) when (is_binary(key) and is_atom(value)) or is_list(value),
       do: Agent.update(__MODULE__, &Map.put(&1, key!(key), value))
 
     @spec key!(key :: binary()) :: binary()
@@ -43,6 +43,10 @@ defmodule Camarero.Catering do
   """
   use DynamicSupervisor
   require Logger
+  alias Camarero.Catering.Routes
+
+  @default_port 4001
+  @default_scheme :http
 
   @doc """
   Starts the `DynamicSupervisor` _and_ `Camarero.Catering.Routes`,
@@ -51,61 +55,24 @@ defmodule Camarero.Catering do
   Upon start, loads `:camarero, :carta` config setting and adds routes for all
     the statically configured handlers.
   """
-  @spec start_link(extra_arguments :: Keyword.t()) ::
+  @spec start_link(extra_arguments :: keyword()) ::
           {:ok, pid()} | {:error, {:already_started, pid()} | term()}
   def start_link(extra_arguments \\ []) do
-    with {:ok, pid} <- DynamicSupervisor.start_link(__MODULE__, extra_arguments, name: __MODULE__) do
-      DynamicSupervisor.start_child(__MODULE__, Camarero.Catering.Routes)
+    with {:ok, pid} <-
+           DynamicSupervisor.start_link(__MODULE__, extra_arguments, name: __MODULE__) do
+      DynamicSupervisor.start_child(__MODULE__, Routes)
 
-      :camarero
-      |> Application.get_env(:carta, [])
-      |> Enum.each(&route!/1)
+      routes =
+        :camarero
+        |> Application.get_env(:carta, [])
+        |> Enum.map(&route!/1)
 
+      Routes.put("★", routes)
       {:ok, pid}
     end
   end
 
-  @doc """
-  Declares and stores the new route. If the route is already set, logs an error
-    message to the log and acts as NOOP.
-  """
-  @spec route!(Supervisor.child_spec() | {module(), term()} | module()) :: State.t()
-  def route!(child_spec) when is_atom(child_spec),
-    do: do_route!(child_spec, child_spec)
-
-  def route!({prefix, suffix}) when is_atom(prefix) and is_atom(suffix),
-    do: route!(Module.concat(prefix, suffix))
-
-  def route!({module, params} = child_spec) when is_atom(module) and is_list(params),
-    do: do_route!(child_spec, module)
-
-  def route!(%{start: {module, _, _}} = child_spec),
-    do: do_route!(child_spec, module)
-
-  defp do_route!(child_spec, module) do
-    with {:ok, _} <- DynamicSupervisor.start_child(__MODULE__, child_spec) do
-      route = apply(module, :plato_route, [])
-
-      existing =
-        Enum.find(Camarero.Catering.Routes.state(), fn
-          {^route, _} -> true
-          ^route -> true
-          _ -> false
-        end)
-
-      if existing do
-        Logger.error("""
-          Dynamic overriding of existing route [#{inspect(existing)}] is not allowed.
-          The requested route [#{route} → #{module}] was not added.
-        """)
-      else
-        Camarero.Catering.Routes.put(route, module)
-        Camarero.handler!(struct(module).__env__, nil)
-      end
-    end
-  end
-
-  @impl true
+  @impl DynamicSupervisor
   def init(extra_arguments) when is_list(extra_arguments) do
     with {max_restarts, extra_arguments} <- Keyword.pop(extra_arguments, :max_restarts, 3),
          {max_seconds, extra_arguments} <- Keyword.pop(extra_arguments, :max_seconds, 5),
@@ -119,4 +86,61 @@ defmodule Camarero.Catering do
       )
     end
   end
+
+  @doc """
+  Declares and stores the new route. If the route is already set, logs an error
+    message to the log and acts as NOOP.
+  """
+  @spec route!(runner :: Supervisor.child_spec() | module()) ::
+          {module(), {module(), module()}, {Plug.Cowboy, keyword()}}
+  def route!(runner) when is_atom(runner) do
+    route = apply(runner, :plato_route, [])
+
+    existing =
+      Routes.state()
+      |> Map.to_list()
+      |> Enum.find(fn
+        {^route, _} -> true
+        ^route -> true
+        _ -> false
+      end)
+
+    if existing do
+      Logger.error("""
+        Dynamic overriding of existing route [#{inspect(existing)}] is not allowed.
+        The requested route [#{route} → #{runner}] was not added.
+      """)
+    else
+      Routes.put(route, runner)
+      {handler, endpoint} = Camarero.handler!(struct(runner).__env__, nil)
+
+      cowboy =
+        :camarero
+        |> Application.get_env(:cowboy, [])
+        |> Keyword.put(:plug, endpoint)
+        |> Keyword.put_new(:options, [])
+        |> update_in([:options, :port], fn
+          nil -> @default_port
+          any -> any
+        end)
+        |> Keyword.put_new(:scheme, @default_scheme)
+
+      Logger.info("[🕷️] route created successfully",
+        handler: handler,
+        cowboy: inspect(cowboy)
+      )
+
+      DynamicSupervisor.start_child(Camarero.Catering, {runner, []})
+
+      ref = Module.concat(endpoint, String.upcase(to_string(cowboy[:scheme])))
+      if Code.ensure_loaded?(ref), do: Plug.Cowboy.shutdown(ref)
+      Plug.Cowboy.http(cowboy[:plug], [], port: cowboy[:options][:port])
+
+      {runner, {handler, endpoint}, {Plug.Cowboy, cowboy}}
+    end
+  end
+
+  # runtime only
+  def route!(%{} = runner),
+    do: DynamicSupervisor.start_child(__MODULE__, runner)
 end
