@@ -91,7 +91,8 @@ defmodule Camarero.Catering do
   Declares and stores the new route. If the route is already set, logs an error
     message to the log and acts as NOOP.
   """
-  @spec route!(runner :: Supervisor.child_spec() | module()) :: {module(), {module(), module()}, {Plug.Cowboy, keyword()}}
+  @spec route!(runner :: Supervisor.child_spec() | module()) ::
+          {module(), {module(), module()}, {Plug.Cowboy, keyword()}}
   def route!(runner) when is_atom(runner) do
     route = apply(runner, :plato_route, [])
 
