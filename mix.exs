@@ -61,7 +61,7 @@ defmodule Camarero.MixProject do
       {:stream_data, "~> 0.4", only: [:test, :ci]},
       {:observer_cli, "~> 1.5", only: [:dev, :test]},
       {:credo, "~> 1.0", only: [:dev, :ci]},
-      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :ci], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :ci], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end

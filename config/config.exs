@@ -9,7 +9,7 @@ config :camarero,
   #   extra_arguments: []
   # ],
   root: "api/v1",
-  cowboy: [scheme: :http, options: [port: 4002]]
+  cowboy: [scheme: :http, options: [port: 4001]]
 
 config :logger, :console,
   format: "\n$message\n$date $time [$level] $metadata\n",
