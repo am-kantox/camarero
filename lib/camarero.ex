@@ -96,7 +96,7 @@ defmodule Camarero do
     handler_ast = handler_ast()
     remodule!(handler_name, handler_ast, env)
 
-    unless Code.ensure_compiled?(handler_name),
+    unless match?({:module, ^handler_name}, Code.ensure_compiled(handler_name)),
       do: raise(CompileError, message: "Generator conflict")
 
     endpoint_ast = endpoint_ast(handler_name)
@@ -121,7 +121,7 @@ defmodule Camarero do
 
   @spec remodule!(atom(), any(), %Macro.Env{}) :: {:module, module(), binary(), term()}
   defp remodule!(name, ast, env) do
-    if Code.ensure_compiled?(name) do
+    if match?({:module, ^name}, Code.ensure_compiled(name)) do
       :code.purge(name)
       :code.delete(name)
     end
@@ -186,7 +186,7 @@ defmodule Camarero do
     {routes, ast} =
       items
       |> Enum.filter(&match?(mod when is_atom(mod), &1))
-      |> Enum.filter(&Code.ensure_compiled?/1)
+      |> Enum.filter(&match?({:module, ^&1}, Code.ensure_compiled(&1)))
       |> Enum.sort_by(&(&1 |> apply(:plato_route, []) |> String.length()), &<=/2)
       |> Enum.reduce(
         {[], []},
