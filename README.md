@@ -1,6 +1,6 @@
 # Camarero
 
-## [![CircleCI](https://circleci.com/gh/am-kantox/camarero.svg?style=svg)](https://circleci.com/gh/am-kantox/camarero) Lightweight Json API server, embeddable into any project
+## [![Kantox ❤ OSS](https://img.shields.io/badge/❤-kantox_oss-informational.svg)](https://kantox.com/)  ![Test](https://github.com/am-kantox/camarero/workflows/Test/badge.svg)  ![Dialyzer](https://github.com/am-kantox/camarero/workflows/Dialyzer/badge.svg) Lightweight Json API server, embeddable into any project
 
 **Camarero** is a ready-to-use solution to add some JSON API functionality to your existing application, or to implement the read-only JSON API from the scratch when more sophisticated (read: heavy) solutions are not desirable.
 
