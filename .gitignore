@@ -27,4 +27,4 @@ camarero-*.tar
 
 /.dialyzer/plts/*.plt*
 
-
+.tool-versions
