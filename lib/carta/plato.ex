@@ -9,15 +9,20 @@ defmodule Camarero.Plato do
   Default implementation uses `Camarero.Tapas` as low-level container implementation.
   """
 
+  @typedoc "HTTP status code"
+  @type status_code :: non_neg_integer()
+
   @doc "Returns the container itself, as is"
   @callback plato_all() :: Camarero.Tapas.t()
   @doc "Returns the value for the key specified"
   @callback plato_get(key :: binary() | atom()) ::
-              {:ok, any()} | :error | {:error, {400 | 404 | non_neg_integer(), map()}}
+              {:ok, any()} | :error | {:error, {status_code(), map()}}
   @doc "Sets the value for the key specified (intended to be used from the application)"
-  @callback plato_put(key :: binary() | atom(), value :: any()) :: :ok
+  @callback plato_put(key :: binary() | atom(), value :: any()) ::
+              :ok | {binary(), status_code()} | binary()
   @doc "Deletes the key-value pair for the key specified"
-  @callback plato_delete(key :: binary() | atom()) :: {:ok, any()}
+  @callback plato_delete(key :: binary() | atom()) ::
+              nil | {binary(), status_code()} | binary()
   @doc "Returns the route this module is supposed to be mounted to"
   @callback plato_route() :: binary()
 

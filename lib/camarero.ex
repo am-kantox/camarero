@@ -240,8 +240,8 @@ defmodule Camarero do
                       {value, status} =
                         case apply(unquote(module), :plato_put, [key, value]) do
                           {value, status} -> {value, status}
-                          :ok -> {"", 200}
-                          value -> {value, 200}
+                          :ok -> {"", 201}
+                          value -> {value, 201}
                         end
 
                       send_resp_and_envio(conn, status, value)
