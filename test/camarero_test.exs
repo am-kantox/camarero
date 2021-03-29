@@ -148,7 +148,7 @@ defmodule CamareroTest do
       |> conn("/api/v1/crud", %{key: "foo", value: 42})
       |> Camarero.Handler.call(ctx.opts)
 
-    assert conn.status == 200
+    assert conn.status == 201
 
     conns =
       Enum.map(~w|get delete get delete|a, fn method ->

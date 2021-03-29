@@ -26,6 +26,8 @@ jobs:
           elixir-version: ${{matrix.pair.elixir}}
       - name: Install → Compile dependencies
         run: |
+          mix local.rebar --force
+          mix local.hex --force
           mix do deps.get, compile
           mix compile
       - name: Setup Rabbit → Run tests
