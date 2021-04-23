@@ -235,7 +235,7 @@ defmodule Camarero do
             if Enum.find(struct(module).methods, &(&1 == :post)) do
               post_block =
                 quote generated: true do
-                  case conn.params do
+                  case apply(unquote(module), :reshape, [conn.params]) do
                     %{"key" => key, "value" => value} ->
                       {value, status} =
                         case apply(unquote(module), :plato_put, [key, value]) do
@@ -272,7 +272,7 @@ defmodule Camarero do
             if Enum.find(struct(module).methods, &(&1 == :put)) do
               put_block =
                 quote generated: true do
-                  case conn.params do
+                  case apply(unquote(module), :reshape, [conn.params]) do
                     %{"param" => key, "value" => value} ->
                       {value, status} =
                         case apply(unquote(module), :plato_put, [key, value]) do
@@ -309,7 +309,7 @@ defmodule Camarero do
             if Enum.find(struct(module).methods, &(&1 == :delete)) do
               delete_param_block =
                 quote generated: true do
-                  case conn.params do
+                  case apply(unquote(module), :reshape, [conn.params]) do
                     %{"param" => key} ->
                       {value, status} =
                         case apply(unquote(module), :plato_delete, [key]) do

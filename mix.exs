@@ -3,7 +3,7 @@ defmodule Camarero.MixProject do
 
   @app :camarero
   @app_name "camarero"
-  @version "0.12.0"
+  @version "0.13.0"
 
   def project do
     [

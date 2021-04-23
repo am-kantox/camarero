@@ -186,6 +186,29 @@ defmodule CamareroTest do
     assert Enum.all?(ok, &(&1.status == 200))
   end
 
+  test "supports all CRUD methods with reshape", ctx do
+    conn =
+      :post
+      |> conn("/api/v1/crud", %{id: "foo", value: 42})
+      |> Camarero.Handler.call(ctx.opts)
+
+    assert conn.status == 201
+
+    conns =
+      Enum.map(~w|get delete get delete|a, fn method ->
+        method
+        |> conn("/api/v1/crud/foo")
+        |> Camarero.Handler.call(ctx.opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 404
+    assert get_ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
+  end
+
   test "overriding of existing route is disallowed", _ctx do
     Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
     assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat

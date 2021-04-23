@@ -78,6 +78,10 @@ end
 
 ## Changelog
 
+### `0.13`
+
+- `Plato.reshape/1` to allow reshaping of any incoming data into expected `%{"key" => _, "value" => _}`
+
 ### `0.7`
 
 - Added support for `HTTP PUT` method

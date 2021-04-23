@@ -25,6 +25,8 @@ defmodule Camarero.Plato do
               nil | {binary(), status_code()} | binary()
   @doc "Returns the route this module is supposed to be mounted to"
   @callback plato_route() :: binary()
+  @doc "Returns the key-value map out of a random input"
+  @callback reshape(map()) :: map()
 
   @doc false
   defmacro __using__(opts \\ []) do
@@ -76,6 +78,12 @@ defmodule Camarero.Plato do
         |> Enum.reverse()
         |> hd()
       end
+
+      @impl Camarero.Plato
+      def reshape(%{"key" => _, "value" => _} = map), do: map
+      def reshape(%{"id" => id} = map), do: %{"key" => id, "value" => map}
+      def reshape(%{"uuid" => id} = map), do: %{"key" => id, "value" => map}
+      def reshape(map), do: map
 
       @doc ~s"""
       Starts the `#{__MODULE__}` linked to the current process.
