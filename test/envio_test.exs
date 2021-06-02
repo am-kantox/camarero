@@ -1,6 +1,6 @@
 defmodule CamareroEnvioTest do
   use ExUnit.Case
-  import ExUnit.CaptureIO
+  # import ExUnit.CaptureIO
   use Plug.Test
 
   setup_all do

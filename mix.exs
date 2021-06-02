@@ -3,7 +3,7 @@ defmodule Camarero.MixProject do
 
   @app :camarero
   @app_name "camarero"
-  @version "0.13.1"
+  @version "0.13.2"
 
   def project do
     [
@@ -30,8 +30,7 @@ defmodule Camarero.MixProject do
             sasl: :permanent,
             logger: :permanent,
             cowboy: :permanent,
-            runtime_tools: :permanent,
-            observer_cli: :permanent
+            runtime_tools: :permanent
           ]
         ]
       ]

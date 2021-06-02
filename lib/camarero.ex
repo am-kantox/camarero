@@ -102,7 +102,8 @@ defmodule Camarero do
     endpoint_ast = endpoint_ast(handler_name)
     remodule!(endpoint_name, endpoint_ast, env)
 
-    Logger.info("[🕷️] handler and endpoint created successfully",
+    Logger.info(
+      "[🕷️] handler and endpoint created successfully",
       handler: handler_name,
       endpoint: endpoint_name
     )
@@ -166,10 +167,10 @@ defmodule Camarero do
     root = ("/" <> (:camarero |> Application.get_env(:root, ""))) |> String.trim("/")
 
     items =
-      if Enum.find(Process.registered(), &(&1 == Routes)) do
-        Map.values(Routes.state())
-      else
-        Application.get_env(:camarero, :carta, [])
+      cond do
+        Enum.find(Process.registered(), &(&1 == Routes)) -> Map.values(Routes.state())
+        on_duty() -> Application.get_env(:camarero, :carta, [])
+        true -> []
       end
 
     send_resp_block =
@@ -438,5 +439,14 @@ defmodule Camarero do
 
       plug(unquote(handler))
     end
+  end
+
+  defp on_duty do
+    Application.get_env(:camarero, :otp_app, :camarero) ==
+      Mix.Project.get()
+      |> Module.split()
+      |> hd()
+      |> Macro.underscore()
+      |> String.to_existing_atom()
   end
 end
