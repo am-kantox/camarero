@@ -427,7 +427,7 @@ defmodule Camarero do
     quote generated: true do
       @moduledoc false
 
-      use Plug.Builder
+      use Plug.Builder, init_mode: :runtime
       plug(Plug.Logger)
 
       plug(Plug.Parsers,
