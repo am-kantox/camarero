@@ -20,7 +20,7 @@ defmodule Camarero.MixProject do
       docs: docs(),
       dialyzer: [
         plt_file: {:no_warn, ".dialyzer/plts/dialyzer.plt"},
-        plt_add_apps: [:envio],
+        plt_add_apps: [:mix, :envio],
         ignore_warnings: ".dialyzer/ignore.exs"
       ],
       releases: [
