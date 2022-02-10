@@ -81,6 +81,7 @@ end
 ### `0.13`
 
 - `Plato.reshape/1` to allow reshaping of any incoming data into expected `%{"key" => _, "value" => _}`
+- make sure to use `v0.13.3` with latest `Plug` library
 
 ### `0.7`
 

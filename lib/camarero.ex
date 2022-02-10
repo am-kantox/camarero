@@ -25,8 +25,8 @@ defmodule Camarero do
       |> Enum.filter(&(&1 in @allowed_methods))
 
     [
-      quote(generated: true, do: @compile({:autoload, true})),
-      quote(generated: true, do: @after_compile({Camarero, :handler!})),
+      quote(generated: true, location: :keep, do: @compile({:autoload, true})),
+      quote(generated: true, location: :keep, do: @after_compile({Camarero, :handler!})),
       quote(
         generated: true,
         location: :keep,
@@ -129,7 +129,7 @@ defmodule Camarero do
 
     Module.create(
       name,
-      quote(generated: true, do: unquote(Macro.expand(ast, env))),
+      quote(generated: true, location: :keep, do: unquote(Macro.expand(ast, env))),
       Macro.Env.location(env)
     )
   end
@@ -138,9 +138,18 @@ defmodule Camarero do
   defp handler_wrapper(method, endpoint, block) when method in @allowed_methods do
     path = endpoint
     route = Plug.Router.__route__(method, path, true, [])
-    {conn, method, match, params, _host, guards, private, assigns} = route
 
-    quote generated: true do
+    {conn, method, match, params, guards, private, assigns} =
+      case route do
+        {conn, method, match, _post_match, params, _host_match, guards, private, assigns} ->
+          {conn, method, match, params, guards, private, assigns}
+
+        {conn, method, match, params, _host, guards, private, assigns} ->
+          {conn, method, match, params, guards, private, assigns}
+      end
+
+    quote generated: true,
+          location: :keep do
       defp(
         do_match(unquote(conn), unquote(method), unquote(match), _)
         when unquote(guards)
@@ -174,7 +183,8 @@ defmodule Camarero do
       end
 
     send_resp_block =
-      quote generated: true do
+      quote generated: true,
+            location: :keep do
         defp send_resp_and_envio(conn, status, what) do
           Camarero.Spitter.spit(:all, %{conn: conn, status: status, what: what})
 
@@ -197,7 +207,8 @@ defmodule Camarero do
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :get)) do
               get_all_block =
-                quote generated: true do
+                quote generated: true,
+                      location: :keep do
                   {values, status} =
                     case apply(unquote(module), :plato_all, []) do
                       {values, status} -> {values, status}
@@ -222,7 +233,11 @@ defmodule Camarero do
               param = Macro.var(:param, nil)
 
               get_param_block =
-                quote(generated: true, do: response!(conn, unquote(module), unquote(param)))
+                quote(
+                  generated: true,
+                  location: :keep,
+                  do: response!(conn, unquote(module), unquote(param))
+                )
 
               get_param =
                 handler_wrapper(:get, Enum.join([endpoint, ":param"], "/"), get_param_block)
@@ -235,7 +250,8 @@ defmodule Camarero do
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :post)) do
               post_block =
-                quote generated: true do
+                quote generated: true,
+                      location: :keep do
                   case apply(unquote(module), :reshape, [conn.params]) do
                     %{"key" => key, "value" => value} ->
                       {value, status} =
@@ -272,7 +288,8 @@ defmodule Camarero do
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :put)) do
               put_block =
-                quote generated: true do
+                quote generated: true,
+                      location: :keep do
                   case apply(unquote(module), :reshape, [conn.params]) do
                     %{"param" => key, "value" => value} ->
                       {value, status} =
@@ -309,7 +326,8 @@ defmodule Camarero do
           {routes, ast} =
             if Enum.find(struct(module).methods, &(&1 == :delete)) do
               delete_param_block =
-                quote generated: true do
+                quote generated: true,
+                      location: :keep do
                   case apply(unquote(module), :reshape, [conn.params]) do
                     %{"param" => key} ->
                       {value, status} =
@@ -352,7 +370,8 @@ defmodule Camarero do
     full_path = Macro.var(:full_path, nil)
 
     catch_all_block =
-      quote generated: true do
+      quote generated: true,
+            location: :keep do
         [param | path] = Enum.reverse(unquote(full_path))
         path = path |> Enum.reverse() |> Enum.join("/")
 
@@ -425,7 +444,8 @@ defmodule Camarero do
   end
 
   defp endpoint_ast(handler) do
-    quote generated: true do
+    quote generated: true,
+          location: :keep do
       @moduledoc false
 
       use Plug.Builder, init_mode: :runtime
