@@ -120,7 +120,7 @@ defmodule Camarero do
       rehandler!(handler_name, endpoint_name, env)
   end
 
-  @spec remodule!(atom(), any(), %Macro.Env{}) :: {:module, module(), binary(), term()}
+  @spec remodule!(atom(), any(), Macro.Env.t()) :: {:module, module(), binary(), term()}
   defp remodule!(name, ast, env) do
     if match?({:module, ^name}, Code.ensure_compiled(name)) do
       :code.purge(name)
@@ -331,7 +331,7 @@ defmodule Camarero do
                   case apply(unquote(module), :reshape, [conn.params]) do
                     %{"param" => key} ->
                       {value, status} =
-                        case apply(unquote(module), :plato_delete, [key]) do
+                        case unquote(module).plato_delete(key) do
                           {value, status} -> {value, status}
                           nil -> {:not_found, 404}
                           value -> {value, 200}
@@ -411,7 +411,7 @@ defmodule Camarero do
 
       defp response!(conn, module, param) do
         {status, response} =
-          case apply(module, :plato_get, [param]) do
+          case module.plato_get(param) do
             {:ok, value} -> {200, %{key: param, value: value}}
             :error -> {404, %{key: param, error: :not_found}}
             {:error, {status, cause}} -> {status, cause}

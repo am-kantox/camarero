@@ -94,7 +94,7 @@ defmodule Camarero.Catering do
   @spec route!(runner :: Supervisor.child_spec() | module()) ::
           {module(), {module(), module()}, {Plug.Cowboy, keyword()}}
   def route!(runner) when is_atom(runner) do
-    route = apply(runner, :plato_route, [])
+    route = runner.plato_route()
 
     existing =
       Routes.state()
