@@ -209,6 +209,94 @@ defmodule CamareroTest do
     assert Enum.all?(ok, &(&1.status == 200))
   end
 
+  test "supports deeply nested routes via `plato_route/0`", ctx do
+    conn =
+      :post
+      |> conn("/api/v1/deeply/nested/crap", %{key: "foo", value: 42})
+      |> Camarero.Handler.call(ctx.opts)
+
+    assert conn.status == 201
+
+    conns =
+      Enum.map(~w|get delete get delete|a, fn method ->
+        method
+        |> conn("/api/v1/deeply/nested/crap/foo")
+        |> Camarero.Handler.call(ctx.opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 404
+    assert get_ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
+
+    conn =
+      :put
+      |> conn("/api/v1/deeply/nested/crap/foo", %{value: 42})
+      |> Camarero.Handler.call(ctx.opts)
+
+    assert conn.status == 200
+
+    conns =
+      Enum.map(~w|get delete get delete|a, fn method ->
+        method
+        |> conn("/api/v1/deeply/nested/crap/foo")
+        |> Camarero.Handler.call(ctx.opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 404
+    assert get_ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
+  end
+
+  test "supports deeply nested routes via `deep: true`", ctx do
+    conn =
+      :post
+      |> conn("/api/v1/deeply/nested/deep", %{key: "foo", value: 42})
+      |> Camarero.Handler.call(ctx.opts)
+
+    assert conn.status == 201
+
+    conns =
+      Enum.map(~w|get delete get delete|a, fn method ->
+        method
+        |> conn("/api/v1/deeply/nested/deep/foo")
+        |> Camarero.Handler.call(ctx.opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 404
+    assert get_ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
+
+    conn =
+      :put
+      |> conn("/api/v1/deeply/nested/deep/foo", %{value: 42})
+      |> Camarero.Handler.call(ctx.opts)
+
+    assert conn.status == 200
+
+    conns =
+      Enum.map(~w|get delete get delete|a, fn method ->
+        method
+        |> conn("/api/v1/deeply/nested/deep/foo")
+        |> Camarero.Handler.call(ctx.opts)
+      end)
+
+    # Assert the response and status
+    assert Enum.all?(conns, &(&1.state == :sent))
+    [delete_ko, get_ko | ok] = Enum.reverse(conns)
+    assert delete_ko.status == 404
+    assert get_ko.status == 404
+    assert Enum.all?(ok, &(&1.status == 200))
+  end
+
   test "overriding of existing route is disallowed", _ctx do
     Camarero.Catering.route!(Camarero.Carta.DuplicateHeartbeat)
     assert Camarero.Catering.Routes.state()["heartbeat"] == Camarero.Carta.Heartbeat

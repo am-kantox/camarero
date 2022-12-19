@@ -10,6 +10,7 @@ defmodule Camarero do
   defmacro __using__(opts \\ []) do
     env = __CALLER__
     into = Keyword.get(opts, :into, {:%{}, [], []})
+    deep = Keyword.get(opts, :deep, false)
     response_as = Keyword.get(opts, :response_as, :map)
     scaffold = Keyword.get(opts, :scaffold, :full)
 
@@ -56,7 +57,7 @@ defmodule Camarero do
           quote(
             generated: true,
             location: :keep,
-            do: use(Camarero.Plato, into: unquote(into))
+            do: use(Camarero.Plato, into: unquote(into), deep: unquote(deep))
           )
 
         :access ->
@@ -86,7 +87,6 @@ defmodule Camarero do
     Code.compiler_options(ignore_module_conflict: true)
     rehandler!(handler_name, endpoint_name, env)
     Code.compiler_options(ignore_module_conflict: false)
-
     #! </UGLY HACK>
 
     {handler_name, endpoint_name}

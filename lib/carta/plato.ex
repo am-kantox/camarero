@@ -2,7 +2,7 @@ defmodule Camarero.Plato do
   @moduledoc """
   This behaviour is high-level abstraction of the container begind handlers.
 
-  Aññ handlers are supposed to implement this behaviour. The simplest way
+  All handlers are supposed to implement this behaviour. The simplest way
   is to `use Camarero.Plato` in the handler module; that will inject
   the default boilerlate using `%{binary() => any()}` map as a container behind.
 
@@ -31,6 +31,7 @@ defmodule Camarero.Plato do
   @doc false
   defmacro __using__(opts \\ []) do
     {into, opts} = Keyword.pop(opts, :into, {:%{}, [], []})
+    {deep, opts} = Keyword.pop(opts, :deep, false)
 
     into =
       quote location: :keep do
@@ -71,12 +72,35 @@ defmodule Camarero.Plato do
         do: GenServer.call(__MODULE__, {:plato_delete, key})
 
       @impl Camarero.Plato
-      def plato_route do
-        __MODULE__
-        |> Macro.underscore()
-        |> String.split("/")
-        |> Enum.reverse()
-        |> hd()
+      case unquote(deep) do
+        false ->
+          def plato_route do
+            __MODULE__
+            |> Macro.underscore()
+            |> String.split("/")
+            |> Enum.reverse()
+            |> hd()
+          end
+
+        true ->
+          def plato_route do
+            __MODULE__
+            |> Macro.underscore()
+            |> String.trim_leading("/")
+            |> String.trim_leading("camarero/carta")
+            |> String.trim_leading("/")
+          end
+
+        path when is_binary(path) ->
+          def plato_route do
+            path = String.trim(path, "/")
+
+            __MODULE__
+            |> Macro.underscore()
+            |> String.trim_leading("/")
+            |> String.trim_leading("path")
+            |> String.trim_leading("/")
+          end
       end
 
       @impl Camarero.Plato
