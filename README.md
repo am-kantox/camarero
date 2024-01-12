@@ -71,12 +71,17 @@ config :camarero,
 ```elixir
 def deps do
   [
-    {:camarero, "~> 0.4"}
+    {:camarero, "~> 1.0"}
   ]
 end
 ```
 
 ## Changelog
+
+### `1.0.0`
+
+- correct handling of `:value` return (not relying on map keys order)
+- no more functionality expected
 
 ### `0.13`
 

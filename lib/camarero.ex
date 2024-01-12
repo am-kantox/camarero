@@ -330,6 +330,7 @@ defmodule Camarero do
                       location: :keep do
                   case apply(unquote(module), :reshape, [conn.params]) do
                     %{"param" => key} ->
+                      # credo:disable-for-lines:6 Credo.Check.Refactor.Nesting
                       {value, status} =
                         case unquote(module).plato_delete(key) do
                           {value, status} -> {value, status}
@@ -387,7 +388,7 @@ defmodule Camarero do
           )
         else
           {module, param} ->
-            Logger.warn(fn ->
+            Logger.warning(fn ->
               ~s|Accessing “#{Enum.join(unquote(full_path), "/")}” dynamically. Consider compiling routes.|
             end)
 
@@ -419,16 +420,9 @@ defmodule Camarero do
 
         response =
           case struct(module).response_as do
-            :map ->
-              response
-
-            :value ->
-              with %{} <- response,
-                   [{_, _}, {_, value}] <- Map.to_list(response),
-                   do: value
-
-            _ ->
-              response
+            :map -> response
+            :value -> with %{value: value} <- response, do: value
+            _ -> response
           end
 
         send_resp_and_envio(conn, status, Jason.encode!(response))
