@@ -112,8 +112,7 @@ defmodule Camarero do
       waiting = round(:rand.uniform() * 100)
 
       Logger.debug(fn ->
-        "Deferring creation of #{env.module} for #{waiting} ms (#{inspect(err)})" <>
-          inspect(__STACKTRACE__)
+        "Deferring creation of #{env.module} for #{waiting} ms (#{inspect(err.__struct__)})"
       end)
 
       Process.sleep(waiting)
