@@ -78,6 +78,10 @@ end
 
 ## Changelog
 
+### `1.0.2`
+
+- pass `headers` and `cookies` to `reshape/2`
+
 ### `1.0.0`
 
 - correct handling of `:value` return (not relying on map keys order)

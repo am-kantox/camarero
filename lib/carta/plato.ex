@@ -27,6 +27,8 @@ defmodule Camarero.Plato do
   @callback plato_route() :: binary()
   @doc "Returns the key-value map out of a random input"
   @callback reshape(map()) :: map()
+  @doc "Returns the key-value map out of a random input, the second argument contains additional request data"
+  @callback reshape(map(), keyword()) :: map()
 
   @doc false
   defmacro __using__(opts \\ []) do
@@ -108,6 +110,11 @@ defmodule Camarero.Plato do
       def reshape(%{"id" => id} = map), do: %{"key" => id, "value" => map}
       def reshape(%{"uuid" => id} = map), do: %{"key" => id, "value" => map}
       def reshape(map), do: map
+
+      @impl Camarero.Plato
+      def reshape(params, _extra), do: reshape(params)
+
+      defoverridable reshape: 1, reshape: 2
 
       @doc ~s"""
       Starts the `#{__MODULE__}` linked to the current process.

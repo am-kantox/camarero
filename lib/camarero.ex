@@ -251,7 +251,10 @@ defmodule Camarero do
               post_block =
                 quote generated: true,
                       location: :keep do
-                  case apply(unquote(module), :reshape, [conn.params]) do
+                  case unquote(module).reshape(conn.params,
+                         headers: conn.req_headers,
+                         cookies: conn.cookies
+                       ) do
                     %{"key" => key, "value" => value} ->
                       {value, status} =
                         case apply(unquote(module), :plato_put, [key, value]) do
@@ -289,7 +292,10 @@ defmodule Camarero do
               put_block =
                 quote generated: true,
                       location: :keep do
-                  case apply(unquote(module), :reshape, [conn.params]) do
+                  case unquote(module).reshape(conn.params,
+                         headers: conn.req_headers,
+                         cookies: conn.cookies
+                       ) do
                     %{"param" => key, "value" => value} ->
                       {value, status} =
                         case apply(unquote(module), :plato_put, [key, value]) do
@@ -327,7 +333,10 @@ defmodule Camarero do
               delete_param_block =
                 quote generated: true,
                       location: :keep do
-                  case apply(unquote(module), :reshape, [conn.params]) do
+                  case unquote(module).reshape(conn.params,
+                         headers: conn.req_headers,
+                         cookies: conn.cookies
+                       ) do
                     %{"param" => key} ->
                       # credo:disable-for-lines:6 Credo.Check.Refactor.Nesting
                       {value, status} =
