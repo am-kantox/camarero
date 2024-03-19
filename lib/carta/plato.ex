@@ -114,8 +114,6 @@ defmodule Camarero.Plato do
       @impl Camarero.Plato
       def reshape(params, _extra), do: reshape(params)
 
-      defoverridable reshape: 1, reshape: 2
-
       @doc ~s"""
       Starts the `#{__MODULE__}` linked to the current process.
       """

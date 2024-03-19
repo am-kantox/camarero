@@ -209,7 +209,7 @@ defmodule Camarero do
                 quote generated: true,
                       location: :keep do
                   {values, status} =
-                    case apply(unquote(module), :plato_all, []) do
+                    case unquote(module).plato_all() do
                       {values, status} -> {values, status}
                       values -> {values, 200}
                     end
@@ -257,7 +257,7 @@ defmodule Camarero do
                        ) do
                     %{"key" => key, "value" => value} ->
                       {value, status} =
-                        case apply(unquote(module), :plato_put, [key, value]) do
+                        case unquote(module).plato_put(key, value) do
                           {value, status} -> {value, status}
                           :ok -> {"", 201}
                           value -> {value, 201}
@@ -298,7 +298,7 @@ defmodule Camarero do
                        ) do
                     %{"param" => key, "value" => value} ->
                       {value, status} =
-                        case apply(unquote(module), :plato_put, [key, value]) do
+                        case unquote(module).plato_put(key, value) do
                           {value, status} -> {value, status}
                           :ok -> {"", 200}
                           value -> {value, 200}
